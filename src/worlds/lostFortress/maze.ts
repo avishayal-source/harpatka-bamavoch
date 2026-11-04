@@ -1,0 +1,47 @@
+import type { MazeLink } from '../../models/types'
+
+/** Fixed fortress map. North is up. Add a room here when a new idea gets a place. */
+export const mazeLayout: Record<string, { x: number; y: number; mapLabel: string; monsterId?: string }> = {
+  watchtower: { x: 0, y: 0, mapLabel: 'מגדל', monsterId: 'stone-bat' },
+  start: { x: 1, y: 0, mapLabel: 'שער' },
+  'torch-court': { x: 2, y: 0, mapLabel: 'חצר' },
+  armory: { x: 0, y: 1, mapLabel: 'נשק' },
+  corridor: { x: 1, y: 1, mapLabel: 'דלת' },
+  fork: { x: 2, y: 1, mapLabel: 'פרשה' },
+  'floor-trap': { x: 0, y: 2, mapLabel: 'מלכודת' },
+  hall: { x: 1, y: 2, mapLabel: 'אולם' },
+  'glow-fountain': { x: 2, y: 2, mapLabel: 'מזרקה' },
+  goblin: { x: 0, y: 3, mapLabel: 'גובלין', monsterId: 'dust-goblin' },
+  'coin-chest': { x: 1, y: 3, mapLabel: 'ארגז' },
+  library: { x: 2, y: 3, mapLabel: 'ספרייה' },
+  'dwarf-tunnel': { x: 0, y: 4, mapLabel: 'מנהרה' },
+  'stone-guardian': { x: 1, y: 4, mapLabel: 'שומר', monsterId: 'stone-guardian' },
+  'mist-bridge': { x: 2, y: 4, mapLabel: 'גשר', monsterId: 'mist-wolf' },
+  exit: { x: 1, y: 5, mapLabel: 'יציאה' },
+}
+
+export const mazeLinks: MazeLink[] = [
+  { a: 'start', b: 'watchtower' },
+  { a: 'start', b: 'torch-court' },
+  { a: 'start', b: 'corridor' },
+  { a: 'watchtower', b: 'armory' },
+  { a: 'torch-court', b: 'fork' },
+  { a: 'corridor', b: 'armory' },
+  { a: 'corridor', b: 'fork' },
+  { a: 'corridor', b: 'hall' },
+  { a: 'armory', b: 'floor-trap' },
+  { a: 'fork', b: 'glow-fountain' },
+  { a: 'hall', b: 'floor-trap' },
+  { a: 'hall', b: 'glow-fountain' },
+  { a: 'hall', b: 'coin-chest' },
+  { a: 'floor-trap', b: 'goblin' },
+  { a: 'glow-fountain', b: 'library' },
+  { a: 'goblin', b: 'coin-chest' },
+  { a: 'goblin', b: 'dwarf-tunnel' },
+  { a: 'coin-chest', b: 'library' },
+  { a: 'coin-chest', b: 'stone-guardian' },
+  { a: 'library', b: 'mist-bridge' },
+  { a: 'dwarf-tunnel', b: 'stone-guardian' },
+  { a: 'stone-guardian', b: 'mist-bridge' },
+  { a: 'stone-guardian', b: 'exit' },
+]
