@@ -26,7 +26,8 @@ flowchart TD
     Class --> Roll[Roll abilities 0–10<br/>one reroll allowed]
     Roll --> Weapon[Choose a class weapon]
     Weapon --> Setup[Age · difficulty · length]
-    Setup --> Room[Enter a room]
+    Setup --> Intro[Intro story<br/>why the hero goes in, what waits inside]
+    Intro --> Room[Enter a room]
 
     Room --> Monster{Living monster<br/>in the room?}
     Monster -->|yes| Fight[Dice fight]
@@ -50,37 +51,52 @@ flowchart TD
 
 ### The maze
 
-The maze is a fixed, hand-placed grid, not a random route, so new rooms can go in exact spots. Every corridor works both ways. The exit is only reachable through the stone guardian.
+The maze is a fixed, hand-placed layout of 26 rooms, not a random route, so new rooms can go in exact spots. It is irregular, with loops, six dead ends, and three secret doors. Every corridor works both ways. The exit is only reachable through the stone guardian.
 
 ```mermaid
 flowchart TB
-    watchtower["מגדל 🦇"] --- start["שער (start)"] --- torch[חצר]
-    watchtower --- armory[נשק]
-    start --- corridor[דלת]
+    watchtower["מגדל 🦇"] --- start["שער (start)"] --- torch[חצר] --- well["באר ⛔"]
+    kitchen["מטבח ⛔"] --- armory[נשק]
+    watchtower --- armory
+    start --- corridor["דלת 🔒"]
     torch --- fork[פרשה]
-    armory --- corridor --- fork
+    fork --- winding[מתפתל] --- stair["מדרגות ⛔"]
+    well -. secret .- winding
     armory --- trap[מלכודת]
     corridor --- hall[אולם]
     fork --- fountain[מזרקה]
+    winding --- spiral[לולייני]
     trap --- hall --- fountain
     trap --- goblin["גובלין 👺"]
+    echo["הד ⛔"] --- goblin
     hall --- chest[ארגז]
     fountain --- library[ספרייה]
-    goblin --- chest --- library
-    goblin --- tunnel[מנהרה]
-    chest --- guardian["שומר 🗿"]
-    library --- bridge["גשר 🐺"]
-    tunnel --- guardian --- bridge
+    spiral --- cellar["מרתף 🦀"]
+    library --- cellar
+    goblin --- chest
+    goblin --- tunnel["מנהרה ⛔"]
+    tunnel -. secret .- pass[צר]
+    chest --- pass
+    library -. secret .- vault["כספת 💎"]
+    cellar --- mushroom["פטריות ⛔"]
+    pass --- guardian["שומר 🗿"]
+    vault --- bridge["גשר 🐺"]
+    guardian --- bridge
     guardian --- exit["יציאה 🏁"]
 ```
+
+⛔ marks a dead end (the tunnel stops being one once you find its secret door). Dotted lines are secret doors, and 🔒 is the locked door.
 
 Movement rules:
 
 - Entering a room for the first time counts toward the exploration score.
-- Walking back through the door you came in is labeled **חזרה**.
-- In a trap room, the other exits open only after you try the trap once. The way back always stays open.
-- Beaten monsters stay beaten. Room choices can be used once.
-- The map beside the story shows rooms you entered, `?` for doors you saw, gold lines for corridors you walked, and dashed lines for ones you didn't.
+- Walking back through the door you came in is labeled **חזרה**. Rooms you haven't seen yet are not named in the door labels.
+- In a trap room or behind the locked door, the other exits open only after you try one of the room's choices. The way back always stays open.
+- A secret door stays hidden, on the map and in the exits, until a room choice reveals it. For example, reading the glowing book, the dwarf's wall knock, or climbing down the well.
+- Some choices are alternatives, such as the different ways through the locked door. Using one hides the rest. Other choices in the same room stay available.
+- Beaten monsters stay beaten. A monster you ran from keeps its wounds and remembers you when you return.
+- The map beside the story shows rooms you entered, `?` for doors you saw, gold lines for corridors you walked, dashed lines for ones you didn't, and purple for secret doors. ⚔️ marks a monster that is still waiting, and ✅ one you beat.
+- The adventure journal under the map lists what you did and where. Each room also shows **מה כבר עשיתם כאן**: what you already did in that room.
 
 ### A fight round
 
@@ -143,6 +159,7 @@ src/
   worlds/lostFortress/
     maze.ts      Room positions and corridors
     monsters.ts  Monster stats and abilities
+    intro.ts     Opening story per class and age
     rooms/       Room stories and choices
   components/    Screens, status bar, maze map
   storage/       Save and load from localStorage
@@ -153,3 +170,4 @@ src/
 1. Write the room in `src/worlds/lostFortress/rooms/moreRooms.ts` (or a new file exported from `rooms/index.ts`).
 2. Give it a spot and map label in `mazeLayout`, and connect it in `mazeLinks`, in `src/worlds/lostFortress/maze.ts`.
 3. To make it a fight, add a monster in `monsters.ts` and set `monsterId` on the room's layout entry.
+4. For a secret door, mark the link `hidden: true` and give some choice `success.revealDoor` with the room on the other side. Choices that are alternatives share a `group`.

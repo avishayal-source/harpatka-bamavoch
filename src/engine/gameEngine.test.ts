@@ -7,6 +7,7 @@ import {
   acknowledgeFeedback,
   combatAction,
   createNewGame,
+  getMapView,
   getRoomView,
   listChoiceViews,
   resolveChoice,
@@ -62,6 +63,16 @@ function atRoom(classId: CharacterClass, roomId: string, extra?: Partial<GameSta
     visitedRooms: [...new Set([...state.visitedRooms, roomId])],
     magicPoints: extra?.magicPoints ?? state.maxMagicPoints,
   }
+}
+
+/** Through the locked door the safe way, then south to the guardian. */
+function walkToGuardian(start: GameState): GameState {
+  let state = moveTo(start, 'corridor', catalog)
+  state = acknowledgeFeedback(resolveChoice(state, 'corridor-around', catalog))
+  for (const roomId of ['hall', 'coin-chest', 'narrow-pass', 'stone-guardian']) {
+    state = moveTo(state, roomId, catalog)
+  }
+  return state
 }
 
 describe('character generation', () => {
@@ -203,7 +214,7 @@ describe('choices', () => {
   })
 
   it('fights with dice, and a strong hit beats a weak defense', () => {
-    const warrior = moveTo(moveTo(moveTo(moveTo(newGame('WARRIOR'), 'corridor', catalog), 'hall', catalog), 'coin-chest', catalog), 'stone-guardian', catalog)
+    const warrior = walkToGuardian(newGame('WARRIOR'))
     expect(warrior.combat?.monsterId).toBe('stone-guardian')
     const hit = combatAction(warrior, 'strike', catalog, { player: 6, foe: 1, counterPlayer: 6, counterFoe: 1 })
     expect(hit.pendingFeedback?.dice?.[0]?.result).toContain('פגעתם')
@@ -368,10 +379,7 @@ describe('the fortress maze', () => {
   })
 
   it('can be won by walking to the exit and beating the guardian', () => {
-    let state = newGame('WIZARD')
-    for (const roomId of ['corridor', 'hall', 'coin-chest', 'stone-guardian']) {
-      state = moveTo(state, roomId, catalog)
-    }
+    let state = walkToGuardian(newGame('WIZARD'))
     for (let guard = 0; state.combat && guard < 8; guard += 1) {
       state = combatAction(state, 'strike', catalog, { player: 6, foe: 1, counterPlayer: 6, counterFoe: 1 })
       expect(state.phase).toBe('feedback')
@@ -382,5 +390,69 @@ describe('the fortress maze', () => {
     state = resolveChoice(state, 'exit-leave', catalog)
     expect(state.phase).toBe('victory')
     expect(state.treasure).toBeGreaterThan(0)
+  })
+
+  it('hides the other alternatives once one is used, but keeps separate actions', () => {
+    let state = acknowledgeFeedback(resolveChoice(newGame('THIEF'), 'start-quiet', catalog))
+    const ids = listChoiceViews(state, catalog).map((choice) => choice.id)
+    expect(ids).not.toContain('start-quiet')
+    expect(ids).not.toContain('start-bold')
+    expect(() => resolveChoice(state, 'start-bold', catalog)).toThrow(/Already/)
+
+    state = atRoom('ELF', 'hall')
+    state = acknowledgeFeedback(resolveChoice(state, 'hall-search', catalog))
+    expect(listChoiceViews(state, catalog).map((choice) => choice.id)).toContain('hall-talk')
+  })
+
+  it('keeps the locked door shut until you try it, but the way back stays open', () => {
+    let state = moveTo(newGame('WARRIOR'), 'corridor', catalog)
+    const south = listChoiceViews(state, catalog).find((choice) => choice.id === 'move:hall')
+    expect(south?.enabled).toBe(false)
+    expect(() => moveTo(state, 'hall', catalog)).toThrow(/blocked/)
+    expect(moveTo(state, 'start', catalog).currentRoomId).toBe('start')
+    state = acknowledgeFeedback(resolveChoice(state, 'corridor-around', catalog))
+    expect(moveTo(state, 'hall', catalog).currentRoomId).toBe('hall')
+  })
+
+  it('hides secret doors until a room choice reveals them', () => {
+    let state = atRoom('WIZARD', 'library')
+    expect(listChoiceViews(state, catalog).some((choice) => choice.id === 'move:secret-vault')).toBe(false)
+    expect(() => moveTo(state, 'secret-vault', catalog)).toThrow(/not connected/)
+    expect(getMapView(state, catalog).rooms.some((room) => room.id === 'secret-vault')).toBe(false)
+
+    state = acknowledgeFeedback(resolveChoice(state, 'library-read', catalog))
+    expect(state.foundDoors).toContain('library|secret-vault')
+    expect(state.journal.some((entry) => entry.text.includes('דלת סודית'))).toBe(true)
+    const door = listChoiceViews(state, catalog).find((choice) => choice.id === 'move:secret-vault')
+    expect(door?.label).toContain('הדלת הסודית')
+    expect(listChoiceViews(state, catalog).some((choice) => choice.id === 'library-shelf')).toBe(false)
+    state = moveTo(state, 'secret-vault', catalog)
+    expect(getMapView(state, catalog).corridors.some((corridor) => corridor.secret)).toBe(true)
+  })
+
+  it('has dead ends with only the way back', () => {
+    for (const roomId of ['kitchen', 'well', 'collapsed-stair', 'echo-room', 'mushroom-cave', 'dwarf-tunnel']) {
+      const exits = listChoiceViews(atRoom('THIEF', roomId), catalog).filter((choice) => choice.id.startsWith('move:'))
+      expect(exits, roomId).toHaveLength(1)
+    }
+  })
+
+  it('remembers a wounded monster and what you did in each room', () => {
+    let state = moveTo(newGame('THIEF'), 'watchtower', catalog)
+    state = acknowledgeFeedback(
+      combatAction(state, 'strike', catalog, { player: 6, foe: 1, counterPlayer: 6, counterFoe: 1 }),
+    )
+    const wounded = state.combat?.monsterHp ?? 0
+    expect(wounded).toBeLessThan(state.combat?.monsterMaxHp ?? 0)
+    state = acknowledgeFeedback(combatAction(state, 'flee', catalog, { player: 6, foe: 1 }))
+    expect(state.monsterHp['stone-bat']).toBe(wounded)
+    expect(getMapView(state, catalog).rooms.find((room) => room.id === 'watchtower')?.monster).toBe('alive')
+
+    state = moveTo(state, 'watchtower', catalog)
+    expect(state.combat?.monsterHp).toBe(wounded)
+    expect(getRoomView(state, catalog).story).toContain('זוכר אתכם')
+
+    const hall = acknowledgeFeedback(resolveChoice(atRoom('ELF', 'hall'), 'hall-search', catalog))
+    expect(getRoomView(hall, catalog).memory[0]).toContain('מחפשים בין העמודים')
   })
 })

@@ -1,6 +1,7 @@
-import type { Catalog, GameState } from '../models/types'
+import type { Catalog, GameState, JournalEntry } from '../models/types'
+import { edgeKey } from './mazeNav'
 import { moveTo } from './movement'
-import { choiceAccess, passesCheck } from './requirementEvaluator'
+import { choiceAccess, choiceUsed, passesCheck } from './requirementEvaluator'
 import { textFor } from './text'
 import { applyVitals } from './vitals'
 
@@ -12,7 +13,7 @@ export function resolveChoice(state: GameState, choiceId: string, catalog: Catal
   if (!room) throw new Error(`Unknown room: ${state.currentRoomId}`)
   const choice = room.choices.find((item) => item.id === choiceId)
   if (!choice) throw new Error(`Unknown choice: ${choiceId}`)
-  if (state.resolvedChoices.includes(choice.id)) throw new Error(`Already resolved: ${choiceId}`)
+  if (choiceUsed(choice, room, state)) throw new Error(`Already resolved: ${choiceId}`)
 
   const access = choiceAccess(choice, state)
   if (!access.visible) throw new Error(`Hidden choice: ${choiceId}`)
@@ -21,6 +22,13 @@ export function resolveChoice(state: GameState, choiceId: string, catalog: Catal
   const weapon = catalog.weapons[state.character.weaponId]
   const success = choice.check ? passesCheck(choice.check, state, weapon?.damage ?? 0) : true
   const outcome = !success && choice.failure ? choice.failure : choice.success
+  const journal: JournalEntry[] = [
+    { roomId: room.id, text: choice.check ? `${choice.label} (${success ? 'הצליח' : 'לא הצליח'})` : choice.label },
+  ]
+  const door = outcome.revealDoor
+  if (door) {
+    journal.push({ roomId: room.id, text: `מצאתם דלת סודית אל ${catalog.rooms[door]?.title ?? door}` })
+  }
   return applyVitals(state, {
     hpDelta: outcome.hpChange,
     magicDelta: outcome.magicChange,
@@ -32,6 +40,8 @@ export function resolveChoice(state: GameState, choiceId: string, catalog: Catal
     choiceId: choice.id,
     recordDecision: outcome.recordDecision,
     resolveChoice: true,
+    revealDoor: door ? edgeKey(room.id, door) : undefined,
+    journal,
   })
 }
 

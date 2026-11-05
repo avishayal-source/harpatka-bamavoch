@@ -100,11 +100,15 @@ export interface Outcome {
   nextRoomId?: string
   recordDecision?: string
   victory?: boolean
+  /** Opens the hidden door between this room and the given room. */
+  revealDoor?: string
 }
 
 export interface Choice {
   id: string
   label: string
+  /** Choices in the same group are alternatives: using one uses them all. */
+  group?: string
   requiresClass?: CharacterClass[]
   requiresMagic?: number
   requiresWeapon?: string
@@ -128,6 +132,8 @@ export interface Room {
   y?: number
   mapLabel?: string
   monsterId?: string
+  /** Only the way back is open until one of the room's choices is used. */
+  barrier?: boolean
   hint?: {
     minIntelligence: number
     text: AgeText
@@ -148,6 +154,13 @@ export interface Monster {
 export interface MazeLink {
   a: string
   b: string
+  /** A secret door: not shown or usable until a room choice reveals it. */
+  hidden?: boolean
+}
+
+export interface JournalEntry {
+  roomId: string
+  text: string
 }
 
 export type CombatAction = 'strike' | 'flee' | 'spell' | 'skill'
@@ -226,7 +239,12 @@ export interface GameState {
   discoveredEdges: string[]
   cameFromRoomId: string | null
   defeatedMonsters: string[]
+  /** Life left on monsters you met and did not beat. */
+  monsterHp: Record<string, number>
   resolvedChoices: string[]
+  /** Edge keys of secret doors you found. */
+  foundDoors: string[]
+  journal: JournalEntry[]
   diceState: number
   combat: CombatState | null
   decisions: string[]
@@ -255,12 +273,14 @@ export interface MapRoom {
   y: number
   label: string
   kind: 'here' | 'visited' | 'seen'
+  monster?: 'alive' | 'beaten'
 }
 
 export interface MapCorridor {
   a: string
   b: string
   walked: boolean
+  secret: boolean
 }
 
 export interface MapView {
@@ -285,6 +305,8 @@ export interface RoomView {
   title: string
   story: string
   hint?: string
+  /** What you already did here, for return visits. */
+  memory: string[]
   choices: ChoiceView[]
   routeIndex: number
   routeLength: number

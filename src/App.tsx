@@ -5,6 +5,7 @@ import { CharacterSheetScreen } from './components/screens/CharacterSheetScreen'
 import { EndingScreen } from './components/screens/EndingScreen'
 import { FeedbackScreen } from './components/screens/FeedbackScreen'
 import { HomeScreen } from './components/screens/HomeScreen'
+import { IntroScreen } from './components/screens/IntroScreen'
 import { SetupScreen } from './components/screens/SetupScreen'
 import { WeaponScreen } from './components/screens/WeaponScreen'
 import { acknowledgeFeedback, combatAction, createNewGame, resolveChoice, rollCharacter } from './engine/gameEngine'
@@ -19,6 +20,7 @@ type Flow =
   | { screen: 'sheet'; draft: Draft }
   | { screen: 'weapon'; draft: Draft }
   | { screen: 'setup'; draft: Draft }
+  | { screen: 'intro'; state: GameState }
   | { screen: 'play'; state: GameState }
 
 export function App() {
@@ -36,6 +38,11 @@ export function App() {
     saveGame(flow.state)
     setCanContinue(true)
   }, [flow])
+
+  const playState = flow.screen === 'play' ? flow.state : null
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [flow.screen, playState?.currentRoomId, playState?.phase])
 
   function startDraft(classId: CharacterClass, kept?: Partial<Draft>): Draft {
     const rolled = rollCharacter(classId, catalog)
@@ -149,10 +156,14 @@ export function App() {
             },
             catalog,
           )
-          setFlow({ screen: 'play', state })
+          setFlow({ screen: 'intro', state })
         }}
       />
     )
+  }
+
+  if (flow.screen === 'intro') {
+    return <IntroScreen state={flow.state} onEnter={() => setFlow({ screen: 'play', state: flow.state })} />
   }
 
   if (flow.state.phase === 'victory' || flow.state.phase === 'gameover') {

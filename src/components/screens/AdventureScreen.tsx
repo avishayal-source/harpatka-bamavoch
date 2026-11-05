@@ -1,6 +1,6 @@
 import { roomTypeLabel } from '../../content/uiText'
 import { combatActions, defenseScore, tunedMonster } from '../../engine/combat'
-import { getMapView, getRoomView } from '../../engine/gameEngine'
+import { getJournalView, getMapView, getRoomView } from '../../engine/gameEngine'
 import { catalog } from '../../game/catalog'
 import type { CombatAction, GameState } from '../../models/types'
 import { MazeMap } from '../MazeMap'
@@ -39,6 +39,16 @@ export function AdventureScreen({
           <h1>{combat && monster ? monster.name : view.title}</h1>
           <p className="story">{view.story}</p>
           {view.hint ? <p className="hint">{view.hint}</p> : null}
+          {view.memory.length > 0 ? (
+            <div className="memory">
+              <h2>מה כבר עשיתם כאן</h2>
+              <ul>
+                {view.memory.map((text, index) => (
+                  <li key={`${index}-${text}`}>{text}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
           {combat && monster ? (
             <div className="versus">
               <article className="monster-card">
@@ -106,7 +116,7 @@ export function AdventureScreen({
           </button>
         </div>
       </section>
-      <MazeMap view={getMapView(state, catalog)} />
+      <MazeMap view={getMapView(state, catalog)} journal={getJournalView(state, catalog)} />
     </main>
   )
 }

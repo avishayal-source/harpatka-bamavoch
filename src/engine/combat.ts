@@ -111,11 +111,14 @@ export function combatAction(
     if (escaped && state.cameFromRoomId) {
       const destination = state.cameFromRoomId
       const moved = arrive(state, destination, diceState)
+      const left = state.combat.monsterHp
       return applyVitals(moved, {
-        message: 'הרגליים מהירות מהמפלצת. אתם חוזרים לחדר הקודם, והיא לא רודפת.',
+        message: `הרגליים מהירות מהמפלצת. אתם חוזרים לחדר הקודם, והיא לא רודפת.\n${view.name} נשאר עם ${left} חיים, ויחכה לכם שם.`,
         success: true,
         dice,
         endCombat: true,
+        rememberMonster: { id: view.id, hp: left },
+        journal: [{ roomId: state.currentRoomId, text: `ברחתם מ${view.name} (נשארו לו ${left} חיים)` }],
       })
     }
     const counter = monsterStrike(state, view, counterPlayer, counterFoe, 0, 0)
@@ -184,6 +187,7 @@ export function combatAction(
       dice,
       endCombat: true,
       defeatMonsterId: view.id,
+      journal: [{ roomId: state.currentRoomId, text: `ניצחתם את ${view.name}` }],
     })
   }
 

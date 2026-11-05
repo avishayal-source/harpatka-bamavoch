@@ -1,5 +1,5 @@
 import { secondChanceBody } from '../content/uiText'
-import type { Difficulty, GameState, PendingFeedback } from '../models/types'
+import type { Difficulty, GameState, JournalEntry, PendingFeedback } from '../models/types'
 import { scaleHpChange, scaleTreasure } from './adjustments'
 import { clamp } from './clamp'
 
@@ -19,6 +19,11 @@ export interface VitalChange {
   resolveChoice?: boolean
   defeatMonsterId?: string
   endCombat?: boolean
+  /** Edge key of a secret door this result opens. */
+  revealDoor?: string
+  journal?: JournalEntry[]
+  /** Remember a monster's life after you leave its room. */
+  rememberMonster?: { id: string; hp: number }
 }
 
 export function applyVitals(state: GameState, change: VitalChange): GameState {
@@ -66,6 +71,13 @@ export function applyVitals(state: GameState, change: VitalChange): GameState {
     change.defeatMonsterId && !state.defeatedMonsters.includes(change.defeatMonsterId)
       ? [...state.defeatedMonsters, change.defeatMonsterId]
       : state.defeatedMonsters
+  const foundDoors =
+    change.revealDoor && !state.foundDoors.includes(change.revealDoor)
+      ? [...state.foundDoors, change.revealDoor]
+      : state.foundDoors
+  const monsterHp = { ...state.monsterHp }
+  if (change.rememberMonster) monsterHp[change.rememberMonster.id] = change.rememberMonster.hp
+  if (change.defeatMonsterId) delete monsterHp[change.defeatMonsterId]
 
   return {
     ...state,
@@ -76,6 +88,9 @@ export function applyVitals(state: GameState, change: VitalChange): GameState {
     decisions,
     resolvedChoices,
     defeatedMonsters,
+    foundDoors,
+    monsterHp,
+    journal: change.journal ? [...state.journal, ...change.journal] : state.journal,
     combat: change.endCombat || gameOver ? null : state.combat,
     phase: change.victory ? 'victory' : gameOver ? 'gameover' : 'feedback',
     pendingFeedback: {

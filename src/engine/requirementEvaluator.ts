@@ -1,4 +1,5 @@
-import type { AttributeKey, Check, Choice, Difficulty, GameState } from '../models/types'
+import type { AttributeKey, Check, Choice, Difficulty, GameState, Room } from '../models/types'
+import { edgeKey } from './mazeNav'
 
 const LOW_HP_RATIO = 0.25
 
@@ -59,6 +60,19 @@ export function choiceAccess(choice: Choice, state: GameState): ChoiceAccess {
     }
   }
   return { visible: true, enabled: true }
+}
+
+/** Used already, or an alternative in its group was used, or all it does is open a door you found. */
+export function choiceUsed(choice: Choice, room: Room, state: GameState): boolean {
+  if (state.resolvedChoices.includes(choice.id)) return true
+  if (
+    choice.group &&
+    room.choices.some((other) => other.group === choice.group && state.resolvedChoices.includes(other.id))
+  ) {
+    return true
+  }
+  const door = choice.success.revealDoor
+  return Boolean(door && !choice.success.treasureChange && state.foundDoors.includes(edgeKey(room.id, door)))
 }
 
 export function intelligenceHintThreshold(difficulty: Difficulty, minimum: number): number {

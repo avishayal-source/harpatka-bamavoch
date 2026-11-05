@@ -1,21 +1,21 @@
 import type { Catalog, GameState } from '../models/types'
 
-const SAVE_KEY = 'harpatka-bamavoch-save-v2'
+const SAVE_KEY = 'harpatka-bamavoch-save-v3'
 
 interface SaveFile {
-  version: 2
+  version: 3
   state: GameState
 }
 
 export function serializeSave(state: GameState): string {
-  const file: SaveFile = { version: 2, state }
+  const file: SaveFile = { version: 3, state }
   return JSON.stringify(file)
 }
 
 export function parseSave(raw: string, catalog: Catalog): GameState | null {
   try {
     const file = JSON.parse(raw) as Partial<SaveFile>
-    if (file.version !== 2 || !file.state) return null
+    if (file.version !== 3 || !file.state) return null
     return isResumable(file.state, catalog) ? file.state : null
   } catch {
     return null
@@ -49,9 +49,9 @@ function isResumable(state: GameState, catalog: Catalog): boolean {
   if (!state.character || !catalog.classes[state.character.classId]) return false
   if (!catalog.weapons[state.character.weaponId]) return false
   if (!catalog.rooms[state.currentRoomId]) return false
-  if (!Array.isArray(state.plannedRoute) || state.plannedRoute.length === 0) return false
-  if (state.plannedRoute.some((roomId) => !catalog.rooms[roomId])) return false
   if (!Array.isArray(state.visitedRooms) || !Array.isArray(state.discoveredEdges)) return false
   if (!Array.isArray(state.defeatedMonsters) || !Array.isArray(state.resolvedChoices)) return false
+  if (!Array.isArray(state.foundDoors) || !Array.isArray(state.journal)) return false
+  if (!state.monsterHp || typeof state.monsterHp !== 'object') return false
   return true
 }

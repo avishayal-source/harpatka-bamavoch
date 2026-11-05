@@ -1,16 +1,25 @@
-import type { Catalog, GameState, MapView, Room } from '../models/types'
+import type { Catalog, GameState, MapView, MazeLink, Room } from '../models/types'
 
 export function edgeKey(a: string, b: string): string {
   return a < b ? `${a}|${b}` : `${b}|${a}`
 }
 
-export function neighborIds(roomId: string, catalog: Catalog): string[] {
+/** Corridors you can use: every normal one, plus secret doors already found. */
+export function openLinks(catalog: Catalog, state?: Pick<GameState, 'foundDoors'>): MazeLink[] {
+  return catalog.links.filter((link) => !link.hidden || (state?.foundDoors.includes(edgeKey(link.a, link.b)) ?? false))
+}
+
+export function neighborIds(roomId: string, catalog: Catalog, state?: Pick<GameState, 'foundDoors'>): string[] {
   const ids = new Set<string>()
-  for (const link of catalog.links) {
+  for (const link of openLinks(catalog, state)) {
     if (link.a === roomId) ids.add(link.b)
     if (link.b === roomId) ids.add(link.a)
   }
   return [...ids]
+}
+
+export function isSecretLink(catalog: Catalog, a: string, b: string): boolean {
+  return catalog.links.some((link) => link.hidden && edgeKey(link.a, link.b) === edgeKey(a, b))
 }
 
 export function directionWord(from: Room, to: Room): string {
@@ -21,12 +30,13 @@ export function directionWord(from: Room, to: Room): string {
   return 'צפונה'
 }
 
-export function trapBlocks(state: GameState, catalog: Catalog, toRoomId: string): boolean {
+/** Traps and barrier rooms keep every way but the way back shut until you try one of their choices. */
+export function exitBlocked(state: GameState, catalog: Catalog, toRoomId: string): boolean {
   const room = catalog.rooms[state.currentRoomId]
-  if (!room || room.type !== 'TRAP') return false
+  if (!room || (room.type !== 'TRAP' && !room.barrier)) return false
   if (toRoomId === state.cameFromRoomId) return false
-  const cleared = room.choices.some((choice) => state.resolvedChoices.includes(choice.id))
-  return !cleared && room.choices.length > 0
+  if (room.choices.length === 0) return false
+  return !room.choices.some((choice) => state.resolvedChoices.includes(choice.id))
 }
 
 export function getMapView(state: GameState, catalog: Catalog): MapView {
@@ -38,12 +48,18 @@ export function getMapView(state: GameState, catalog: Catalog): MapView {
   const visited = new Set(state.visitedRooms)
   const seen = new Set(state.visitedRooms)
   for (const roomId of state.visitedRooms) {
-    for (const neighbor of neighborIds(roomId, catalog)) seen.add(neighbor)
+    for (const neighbor of neighborIds(roomId, catalog, state)) seen.add(neighbor)
   }
 
   const rooms = placed.flatMap((room) => {
     if (!seen.has(room.id)) return []
     const kind = room.id === state.currentRoomId ? 'here' : visited.has(room.id) ? 'visited' : 'seen'
+    const monster =
+      room.monsterId && visited.has(room.id)
+        ? state.defeatedMonsters.includes(room.monsterId)
+          ? ('beaten' as const)
+          : ('alive' as const)
+        : undefined
     return [
       {
         id: room.id,
@@ -51,15 +67,16 @@ export function getMapView(state: GameState, catalog: Catalog): MapView {
         y: room.y ?? 0,
         label: kind === 'seen' ? '?' : (room.mapLabel ?? room.title),
         kind: kind as MapView['rooms'][number]['kind'],
+        monster,
       },
     ]
   })
 
-  const corridors = catalog.links.flatMap((link) => {
+  const corridors = openLinks(catalog, state).flatMap((link) => {
     const walked = state.discoveredEdges.includes(edgeKey(link.a, link.b))
     const visible = visited.has(link.a) || visited.has(link.b)
     if (!visible) return []
-    return [{ a: link.a, b: link.b, walked }]
+    return [{ a: link.a, b: link.b, walked, secret: link.hidden === true }]
   })
 
   return {

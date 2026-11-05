@@ -8,8 +8,8 @@ import type {
   RoomView,
 } from '../models/types'
 import { ATTRIBUTE_KEYS } from '../models/types'
-import { choiceAccess, effectiveAttribute, intelligenceHintThreshold } from './requirementEvaluator'
-import { directionWord, neighborIds, trapBlocks } from './mazeNav'
+import { choiceAccess, choiceUsed, effectiveAttribute, intelligenceHintThreshold } from './requirementEvaluator'
+import { directionWord, exitBlocked, isSecretLink, neighborIds } from './mazeNav'
 import { randomSeed, type Rng } from './random'
 import { textFor } from './text'
 
@@ -76,7 +76,10 @@ export function createNewGame(input: NewGameInput, catalog: Catalog): GameState 
     discoveredEdges: [],
     cameFromRoomId: null,
     defeatedMonsters: [],
+    monsterHp: {},
     resolvedChoices: [],
+    foundDoors: [],
+    journal: [],
     diceState: seed || 1,
     combat: null,
     decisions: [],
@@ -94,7 +97,7 @@ export function listChoiceViews(state: GameState, catalog: Catalog): ChoiceView[
   const room = catalog.rooms[state.currentRoomId]
   if (!room || state.combat) return []
   const story = room.choices.flatMap((choice) => {
-    if (state.resolvedChoices.includes(choice.id)) return []
+    if (choiceUsed(choice, room, state)) return []
     const access = choiceAccess(choice, state)
     if (!access.visible) return []
     return [{ id: choice.id, label: choice.label, enabled: access.enabled, reason: access.reason }]
@@ -105,18 +108,32 @@ export function listChoiceViews(state: GameState, catalog: Catalog): ChoiceView[
 function exitChoices(state: GameState, catalog: Catalog): ChoiceView[] {
   const here = catalog.rooms[state.currentRoomId]
   if (!here) return []
-  return neighborIds(state.currentRoomId, catalog).map((roomId) => {
+  return neighborIds(state.currentRoomId, catalog, state).map((roomId) => {
     const there = catalog.rooms[roomId]
-    const blocked = trapBlocks(state, catalog, roomId)
+    const blocked = exitBlocked(state, catalog, roomId)
     const way = here.x !== undefined && there?.x !== undefined ? directionWord(here, there) : 'הלאה'
     const back = roomId === state.cameFromRoomId ? 'חזרה ' : ''
+    const secret = isSecretLink(catalog, here.id, roomId) ? ' דרך הדלת הסודית' : ''
+    const known = state.visitedRooms.includes(roomId)
     return {
       id: `move:${roomId}`,
-      label: `${back}${way} אל ${there?.title ?? roomId}`,
+      label: `${back}${way}${secret} אל ${known ? (there?.title ?? roomId) : 'חדר שעוד לא ראיתם'}`,
       enabled: !blocked,
-      reason: blocked ? 'קודם עוברים את המלכודת, או חוזרים אחורה' : undefined,
+      reason: blocked
+        ? here.type === 'TRAP'
+          ? 'קודם עוברים את המלכודת, או חוזרים אחורה'
+          : 'קודם מתמודדים עם הדלת, או חוזרים אחורה'
+        : undefined,
     }
   })
+}
+
+/** Most recent first, with the room each thing happened in. */
+export function getJournalView(state: GameState, catalog: Catalog, limit = 8): { room: string; text: string }[] {
+  return state.journal
+    .slice(-limit)
+    .reverse()
+    .map((entry) => ({ room: catalog.rooms[entry.roomId]?.title ?? entry.roomId, text: entry.text }))
 }
 
 export function getRoomView(state: GameState, catalog: Catalog): RoomView {
@@ -130,14 +147,27 @@ export function getRoomView(state: GameState, catalog: Catalog): RoomView {
   const returned = (state.roomVisits[room.id] ?? 0) > 1 && !state.combat
   const cleared = monster && state.defeatedMonsters.includes(monster.id)
   let story = textFor(state.ageGroup, room.story)
-  if (state.combat && monster) story = textFor(state.ageGroup, monster.description)
-  else if (returned) story = `אתם שוב כאן, ב${room.title}. ${cleared ? 'היצור כבר לא חוסם את הדרך.' : 'אפשר לבחור דרך אחרת.'}`
+  if (state.combat && monster) {
+    story = textFor(state.ageGroup, monster.description)
+    const { monsterHp, monsterMaxHp, round } = state.combat
+    if (round === 1 && monsterHp < monsterMaxHp) {
+      story += `\n${monster.name} זוכר אתכם מהפעם הקודמת. הוא עדיין פצוע: נשארו לו ${monsterHp} מתוך ${monsterMaxHp} חיים.`
+    }
+  } else if (returned) {
+    story = `אתם שוב כאן, ב${room.title}. ${cleared ? `${monster?.name} כבר לא חוסם את הדרך.` : 'אפשר לבחור דרך אחרת.'}`
+  } else if (cleared) {
+    story = `${room.title}. ${monster?.name} יושב בצד ונותן לכם לעבור.`
+  }
+  const memory = state.combat
+    ? []
+    : state.journal.filter((entry) => entry.roomId === room.id).map((entry) => entry.text)
   return {
     id: room.id,
     type: room.type,
     title: room.title,
     story,
     hint: showHint && room.hint ? textFor(state.ageGroup, room.hint.text) : undefined,
+    memory,
     choices: listChoiceViews(state, catalog),
     routeIndex: state.visitedRooms.length,
     routeLength: Object.keys(catalog.rooms).length,

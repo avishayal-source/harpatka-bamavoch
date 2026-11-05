@@ -20,6 +20,7 @@ export const sliceRooms: Room[] = [
       {
         id: 'start-quiet',
         label: 'נכנסים בשקט',
+        group: 'enter',
         check: { kind: 'attribute', attribute: 'agility', minimum: 4 },
         success: {
           message: say(
@@ -39,6 +40,7 @@ export const sliceRooms: Room[] = [
       {
         id: 'start-bold',
         label: 'נכנסים עם הלפיד ביד',
+        group: 'enter',
         success: {
           message: say(
             'אתם מחזיקים את הלפיד גבוה ונכנסים.',
@@ -54,6 +56,7 @@ export const sliceRooms: Room[] = [
     type: 'NORMAL',
     title: 'הדלת הנעולה',
     tags: ['exploration'],
+    barrier: true,
     story: say(
       'דלת עץ גדולה חוסמת את הדרך. היא נעולה.',
       'דלת עץ כבדה חוסמת את המסדרון. מנעול ישן סגור, ועל המשקוף יש סימני קסם חיוורים.',
@@ -71,6 +74,7 @@ export const sliceRooms: Room[] = [
       {
         id: 'corridor-warrior',
         label: 'שוברים את הדלת',
+        group: 'door',
         requiresClass: ['WARRIOR'],
         check: { kind: 'attribute', attribute: 'strength', minimum: 7 },
         success: {
@@ -92,6 +96,7 @@ export const sliceRooms: Room[] = [
       {
         id: 'corridor-thief',
         label: 'פורצים את המנעול',
+        group: 'door',
         requiresClass: ['THIEF'],
         check: { kind: 'attribute', attribute: 'agility', minimum: 8 },
         success: {
@@ -114,6 +119,7 @@ export const sliceRooms: Room[] = [
       {
         id: 'corridor-wizard',
         label: 'פותחים בקסם',
+        group: 'door',
         requiresClass: ['WIZARD'],
         requiresMagic: 2,
         check: { kind: 'attribute', attribute: 'magic', minimum: 8 },
@@ -138,6 +144,7 @@ export const sliceRooms: Room[] = [
       {
         id: 'corridor-elf',
         label: 'מחפשים מנגנון נסתר',
+        group: 'door',
         requiresClass: ['ELF'],
         check: { kind: 'attribute', attribute: 'intelligence', minimum: 7 },
         success: {
@@ -160,6 +167,7 @@ export const sliceRooms: Room[] = [
       {
         id: 'corridor-dwarf',
         label: 'בודקים את קיר האבן',
+        group: 'door',
         requiresClass: ['DWARF'],
         check: { kind: 'attribute', attribute: 'strength', minimum: 6 },
         success: {
@@ -181,6 +189,7 @@ export const sliceRooms: Room[] = [
       {
         id: 'corridor-around',
         label: 'מחפשים דרך אחרת',
+        group: 'door',
         success: {
           message: say(
             'אתם מוצאים מעבר צדדי. הוא ארוך יותר, אבל בטוח.',
@@ -204,7 +213,8 @@ export const sliceRooms: Room[] = [
     choices: [
       {
         id: 'fork-left',
-        label: 'הולכים שמאלה, אל החושך',
+        label: 'בודקים את השביל החשוך',
+        group: 'path',
         check: { kind: 'attribute', attribute: 'agility', minimum: 6 },
         success: {
           message: say(
@@ -225,13 +235,15 @@ export const sliceRooms: Room[] = [
       },
       {
         id: 'fork-right',
-        label: 'הולכים ימינה, אל האור',
+        label: 'בודקים את השביל המואר',
+        group: 'path',
         success: {
           message: say(
-            'האור מראה מדרגות בטוחות. אתם יורדים בלי בעיה.',
-            'האור החם מראה מדרגות בטוחות. אתם יורדים בלי בעיה.',
-            'האור החם מגלה מדרגות רחבות ויבשות. מי שהשאיר אותו כאן עשה לכם טובה, והירידה עוברת בשקט.',
+            'האור מראה שביל בטוח. ליד הקיר יש עוגייה עטופה.',
+            'האור החם מראה שביל בטוח. ליד הקיר מישהו השאיר עוגייה עטופה, ואתם אוכלים אותה.',
+            'האור החם מגלה שביל רחב ויבש. מי שהשאיר אותו כאן השאיר גם עוגייה עטופה בעלה, ואחרי שאוכלים אותה הרגליים מרגישות קלות יותר.',
           ),
+          hpChange: 2,
         },
       },
       {
@@ -316,17 +328,6 @@ export const sliceRooms: Room[] = [
           ),
         },
       },
-      {
-        id: 'hall-leave',
-        label: 'ממשיכים הלאה',
-        success: {
-          message: say(
-            'אתם קדים קידה קטנה לפסל וממשיכים.',
-            'אתם קדים קידה קטנה לפסל וממשיכים. הוא עוקב במבט שקט.',
-            'קידה קטנה, ואז אתם פונים אל היציאה מהאולם. הפסל עוקב אחריכם במבט שקט עד שהצל של העמוד מכסה אותו.',
-          ),
-        },
-      },
     ],
   },
   {
@@ -371,6 +372,7 @@ export const sliceRooms: Room[] = [
       {
         id: 'trap-disarm',
         label: 'מפרקים את המלכודת',
+        group: 'trap',
         requiresClass: ['THIEF'],
         check: { kind: 'attribute', attribute: 'agility', minimum: 6 },
         success: {
@@ -393,6 +395,7 @@ export const sliceRooms: Room[] = [
       {
         id: 'trap-careful',
         label: 'דורכים בזהירות',
+        group: 'trap',
         check: { kind: 'attribute', attribute: 'agility', minimum: 7 },
         success: {
           message: say(
@@ -413,6 +416,7 @@ export const sliceRooms: Room[] = [
       {
         id: 'trap-run',
         label: 'רצים קדימה בכל הכוח',
+        group: 'trap',
         check: { kind: 'attribute', attribute: 'strength', minimum: 6 },
         success: {
           message: say(
@@ -446,6 +450,7 @@ export const sliceRooms: Room[] = [
       {
         id: 'fountain-drink',
         label: 'שותים מהמזרקה',
+        group: 'rest',
         success: {
           message: say(
             'המים קרים ומתוקים. הגוף מרגיש קל יותר.',
@@ -458,6 +463,7 @@ export const sliceRooms: Room[] = [
       {
         id: 'fountain-ask',
         label: 'מבקשים עזרה מהמרפאה',
+        group: 'rest',
         check: { kind: 'attribute', attribute: 'charisma', minimum: 6 },
         success: {
           message: say(
@@ -476,17 +482,6 @@ export const sliceRooms: Room[] = [
           hpChange: 4,
         },
       },
-      {
-        id: 'fountain-leave',
-        label: 'ממשיכים בלי לנוח',
-        success: {
-          message: say(
-            'אתם מודים לה וממשיכים.',
-            'אתם מודים לה וממשיכים. המזרקה נשארת מאחור וזוהרת בשקט.',
-            'הודאה קצרה, והמעיל הירוק נשאר ליד האור הכחול. המזרקה ממשיכה לזהור גם אחרי שאתם פונים אל המסדרון.',
-          ),
-        },
-      },
     ],
   },
   {
@@ -503,6 +498,7 @@ export const sliceRooms: Room[] = [
       {
         id: 'chest-careful',
         label: 'פותחים בזהירות',
+        group: 'open',
         check: { kind: 'attribute', attribute: 'intelligence', minimum: 6 },
         success: {
           message: say(
@@ -525,6 +521,7 @@ export const sliceRooms: Room[] = [
       {
         id: 'chest-coins',
         label: 'לוקחים רק את המטבעות הגלויים',
+        group: 'open',
         success: {
           message: say(
             'ליד הארגז יש מטבעות גלויים. אתם לוקחים אותם.',
@@ -537,6 +534,7 @@ export const sliceRooms: Room[] = [
       {
         id: 'chest-magic',
         label: 'בודקים בקסם',
+        group: 'open',
         requiresClass: ['WIZARD', 'ELF'],
         requiresMagic: 1,
         check: { kind: 'attribute', attribute: 'magic', minimum: 5 },
@@ -588,6 +586,7 @@ export const sliceRooms: Room[] = [
       {
         id: 'exit-leave',
         label: 'יוצאים אל האור',
+        group: 'leave',
         success: {
           victory: true,
           message: say(
@@ -600,6 +599,7 @@ export const sliceRooms: Room[] = [
       {
         id: 'exit-coin',
         label: 'אוספים מטבע אחרון מהסף ויוצאים',
+        group: 'leave',
         success: {
           victory: true,
           treasureChange: 5,

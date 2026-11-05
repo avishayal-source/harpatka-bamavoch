@@ -1,12 +1,12 @@
 import type { Catalog, GameState } from '../models/types'
-import { edgeKey, neighborIds, trapBlocks } from './mazeNav'
+import { edgeKey, exitBlocked, neighborIds } from './mazeNav'
 import { monsterTuning } from './vitals'
 
 export function moveTo(state: GameState, roomId: string, catalog: Catalog): GameState {
   if (state.phase !== 'playing') throw new Error('not playing')
   if (state.combat) throw new Error('in combat')
-  if (!neighborIds(state.currentRoomId, catalog).includes(roomId)) throw new Error('not connected')
-  if (trapBlocks(state, catalog, roomId)) throw new Error('trap blocks this way')
+  if (!neighborIds(state.currentRoomId, catalog, state).includes(roomId)) throw new Error('not connected')
+  if (exitBlocked(state, catalog, roomId)) throw new Error('this way is blocked')
 
   const from = state.currentRoomId
   const visits = { ...state.roomVisits, [roomId]: (state.roomVisits[roomId] ?? 0) + 1 }
@@ -24,6 +24,7 @@ export function moveTo(state: GameState, roomId: string, catalog: Catalog): Game
   return beginFight(next, catalog)
 }
 
+/** A monster you ran from keeps the wounds you gave it. */
 export function beginFight(state: GameState, catalog: Catalog): GameState {
   const room = catalog.rooms[state.currentRoomId]
   if (!room?.monsterId || state.defeatedMonsters.includes(room.monsterId) || state.combat) return state
@@ -34,7 +35,7 @@ export function beginFight(state: GameState, catalog: Catalog): GameState {
     ...state,
     combat: {
       monsterId: monster.id,
-      monsterHp: tuned.hp,
+      monsterHp: state.monsterHp[monster.id] ?? tuned.hp,
       monsterMaxHp: tuned.hp,
       round: 1,
     },

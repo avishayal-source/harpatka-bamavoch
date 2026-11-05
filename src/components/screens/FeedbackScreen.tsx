@@ -1,5 +1,5 @@
 import { feedbackHeading } from '../../content/uiText'
-import { getMapView } from '../../engine/gameEngine'
+import { getJournalView, getMapView } from '../../engine/gameEngine'
 import { catalog } from '../../game/catalog'
 import type { GameState } from '../../models/types'
 import { MazeMap } from '../MazeMap'
@@ -63,7 +63,7 @@ export function FeedbackScreen({
           </button>
         </div>
       </section>
-      <MazeMap view={getMapView(state, catalog)} />
+      <MazeMap view={getMapView(state, catalog)} journal={getJournalView(state, catalog)} />
     </main>
   )
 }
