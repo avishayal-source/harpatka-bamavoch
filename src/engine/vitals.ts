@@ -1,5 +1,5 @@
 import { secondChanceBody } from '../content/uiText'
-import type { Difficulty, GameState, JournalEntry, PendingFeedback } from '../models/types'
+import type { Difficulty, GameState, Gear, JournalEntry, PendingFeedback } from '../models/types'
 import { scaleHpChange, scaleTreasure } from './adjustments'
 import { clamp } from './clamp'
 
@@ -24,6 +24,10 @@ export interface VitalChange {
   journal?: JournalEntry[]
   /** Remember a monster's life after you leave its room. */
   rememberMonster?: { id: string; hp: number }
+  /** Shop price. Not scaled by difficulty. */
+  spend?: number
+  key?: string
+  gear?: Gear
 }
 
 export function applyVitals(state: GameState, change: VitalChange): GameState {
@@ -51,7 +55,7 @@ export function applyVitals(state: GameState, change: VitalChange): GameState {
   }
 
   const magicAfter = clamp(magicBefore + magicDelta, 0, state.maxMagicPoints)
-  const treasureAfter = Math.max(0, treasureBefore + treasureDelta)
+  const treasureAfter = Math.max(0, treasureBefore + treasureDelta - (change.spend ?? 0))
   const message = secondChanceUsed ? `${change.message}\n\n${secondChanceBody}` : change.message
   const tone: PendingFeedback['tone'] = secondChanceUsed
     ? 'second-chance'
@@ -90,6 +94,8 @@ export function applyVitals(state: GameState, change: VitalChange): GameState {
     defeatedMonsters,
     foundDoors,
     monsterHp,
+    keys: change.key && !state.keys.includes(change.key) ? [...state.keys, change.key] : state.keys,
+    gear: change.gear ? [...state.gear, change.gear] : state.gear,
     journal: change.journal ? [...state.journal, ...change.journal] : state.journal,
     combat: change.endCombat || gameOver ? null : state.combat,
     phase: change.victory ? 'victory' : gameOver ? 'gameover' : 'feedback',

@@ -1,4 +1,5 @@
 import type { Catalog, GameState, MapView, MazeLink, Room } from '../models/types'
+import { keysMissing } from './gear'
 
 export function edgeKey(a: string, b: string): string {
   return a < b ? `${a}|${b}` : `${b}|${a}`
@@ -30,8 +31,12 @@ export function directionWord(from: Room, to: Room): string {
   return 'צפונה'
 }
 
-/** Traps and barrier rooms keep every way but the way back shut until you try one of their choices. */
+/**
+ * The great door to the exit needs keys. Traps and barrier rooms keep every way but the way back
+ * shut until you try one of their choices.
+ */
 export function exitBlocked(state: GameState, catalog: Catalog, toRoomId: string): boolean {
+  if (toRoomId === catalog.world.exitRoomId && keysMissing(state) > 0) return true
   const room = catalog.rooms[state.currentRoomId]
   if (!room || (room.type !== 'TRAP' && !room.barrier)) return false
   if (toRoomId === state.cameFromRoomId) return false
@@ -68,6 +73,7 @@ export function getMapView(state: GameState, catalog: Catalog): MapView {
         label: kind === 'seen' ? '?' : (room.mapLabel ?? room.title),
         kind: kind as MapView['rooms'][number]['kind'],
         monster,
+        shop: room.type === 'SHOP' && visited.has(room.id),
       },
     ]
   })

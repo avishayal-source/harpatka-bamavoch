@@ -9,12 +9,14 @@ import type {
 } from '../models/types'
 import { ATTRIBUTE_KEYS } from '../models/types'
 import { choiceAccess, choiceUsed, effectiveAttribute, intelligenceHintThreshold } from './requirementEvaluator'
+import { keysMissing, keysNeeded } from './gear'
 import { directionWord, exitBlocked, isSecretLink, neighborIds } from './mazeNav'
 import { randomSeed, type Rng } from './random'
 import { textFor } from './text'
 
 export { acknowledgeFeedback, resolveChoice } from './choiceResolver'
 export { combatAction, combatActions, defenseScore } from './combat'
+export { gearBonus, keysMissing, keysNeeded } from './gear'
 export { getMapView } from './mazeNav'
 export { scoreGame } from './scoring'
 
@@ -80,6 +82,8 @@ export function createNewGame(input: NewGameInput, catalog: Catalog): GameState 
     resolvedChoices: [],
     foundDoors: [],
     journal: [],
+    keys: [],
+    gear: [],
     diceState: seed || 1,
     combat: null,
     decisions: [],
@@ -100,7 +104,8 @@ export function listChoiceViews(state: GameState, catalog: Catalog): ChoiceView[
     if (choiceUsed(choice, room, state)) return []
     const access = choiceAccess(choice, state)
     if (!access.visible) return []
-    return [{ id: choice.id, label: choice.label, enabled: access.enabled, reason: access.reason }]
+    const label = choice.cost ? `${choice.label} · ${choice.cost} מטבעות` : choice.label
+    return [{ id: choice.id, label, enabled: access.enabled, reason: access.reason }]
   })
   return [...story, ...exitChoices(state, catalog)]
 }
@@ -115,17 +120,32 @@ function exitChoices(state: GameState, catalog: Catalog): ChoiceView[] {
     const back = roomId === state.cameFromRoomId ? 'חזרה ' : ''
     const secret = isSecretLink(catalog, here.id, roomId) ? ' דרך הדלת הסודית' : ''
     const known = state.visitedRooms.includes(roomId)
+    const finalDoor = roomId === catalog.world.exitRoomId
+    const missing = keysMissing(state)
+    const name = finalDoor ? 'הדלת הגדולה' : known ? (there?.title ?? roomId) : 'חדר שעוד לא ראיתם'
+    let reason: string | undefined
+    if (blocked) {
+      if (finalDoor && missing > 0) {
+        reason = missing === 1 ? 'הדלת נעולה. חסר לכם עוד מפתח אחד' : `הדלת נעולה. חסרים לכם עוד ${missing} מפתחות`
+      } else {
+        reason = here.type === 'TRAP' ? 'קודם עוברים את המלכודת, או חוזרים אחורה' : 'קודם מתמודדים עם הדלת, או חוזרים אחורה'
+      }
+    }
     return {
       id: `move:${roomId}`,
-      label: `${back}${way}${secret} אל ${known ? (there?.title ?? roomId) : 'חדר שעוד לא ראיתם'}`,
+      label: `${back}${way}${secret} אל ${name}`,
       enabled: !blocked,
-      reason: blocked
-        ? here.type === 'TRAP'
-          ? 'קודם עוברים את המלכודת, או חוזרים אחורה'
-          : 'קודם מתמודדים עם הדלת, או חוזרים אחורה'
-        : undefined,
+      reason,
     }
   })
+}
+
+export function finalDoorText(state: GameState): string {
+  const needed = keysNeeded(state)
+  const holes = needed === 1 ? 'חור מנעול אחד' : `${needed} חורי מנעול`
+  const have = Math.min(state.keys.length, needed)
+  if (keysMissing(state) === 0) return `בקיר יש דלת גדולה עם ${holes}. יש לכם מספיק מפתחות, והדלת נפתחת!`
+  return `בקיר יש דלת גדולה עם ${holes}. יש לכם ${have} מתוך ${needed} מפתחות. מפתחות מסתתרים בפינות השקטות של המבוך.`
 }
 
 /** Most recent first, with the room each thing happened in. */
@@ -158,6 +178,8 @@ export function getRoomView(state: GameState, catalog: Catalog): RoomView {
   } else if (cleared) {
     story = `${room.title}. ${monster?.name} יושב בצד ונותן לכם לעבור.`
   }
+  const byFinalDoor = !state.combat && neighborIds(room.id, catalog, state).includes(catalog.world.exitRoomId)
+  if (byFinalDoor) story += `\n${finalDoorText(state)}`
   const memory = state.combat
     ? []
     : state.journal.filter((entry) => entry.roomId === room.id).map((entry) => entry.text)

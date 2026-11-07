@@ -1,6 +1,7 @@
 import { classes } from '../data/characters'
 import { weapons } from '../data/weapons'
 import type { Catalog } from '../models/types'
+import { fortressKeys } from '../worlds/lostFortress/keys'
 import { mazeLinks } from '../worlds/lostFortress/maze'
 import { monsters } from '../worlds/lostFortress/monsters'
 import { rooms } from '../worlds/lostFortress/rooms'
@@ -15,4 +16,5 @@ export const catalog: Catalog = {
   pools: roomPools,
   links: mazeLinks,
   monsters,
+  keys: fortressKeys,
 }

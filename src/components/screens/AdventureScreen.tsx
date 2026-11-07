@@ -1,5 +1,5 @@
 import { roomTypeLabel } from '../../content/uiText'
-import { combatActions, defenseScore, tunedMonster } from '../../engine/combat'
+import { combatActions, defenseScore, tunedMonster, weaponDamage } from '../../engine/combat'
 import { getJournalView, getMapView, getRoomView } from '../../engine/gameEngine'
 import { catalog } from '../../game/catalog'
 import type { CombatAction, GameState } from '../../models/types'
@@ -19,21 +19,14 @@ export function AdventureScreen({
 }) {
   const view = getRoomView(state, catalog)
   const weapon = catalog.weapons[state.character.weaponId]
+  const damage = weaponDamage(state, catalog)
   const combat = state.combat
   const monster = combat ? tunedMonster(state, catalog.monsters[combat.monsterId]) : undefined
 
   return (
     <main className="play-layout">
       <section className="play-main">
-        <StatusBar
-          hp={state.hp}
-          maxHp={state.maxHp}
-          magic={state.magicPoints}
-          maxMagic={state.maxMagicPoints}
-          treasure={state.treasure}
-          weaponName={`${state.character.name} · ${weapon.name} · נזק ${weapon.damage}`}
-          secondChance={state.secondChanceAvailable}
-        />
+        <StatusBar state={state} weaponName={`${state.character.name} · ${weapon.name} · נזק ${damage}`} />
         <article className="story-card">
           <p className="kicker">{combat ? `קרב · סיבוב ${combat.round}` : roomTypeLabel[view.type]}</p>
           <h1>{combat && monster ? monster.name : view.title}</h1>
@@ -70,7 +63,7 @@ export function AdventureScreen({
                 <ul>
                   <li>כוח {state.character.attributes.strength}</li>
                   <li>
-                    {weapon.name} נזק {weapon.damage}
+                    {weapon.name} נזק {damage}
                   </li>
                   <li>זריזות {state.character.attributes.agility}</li>
                   <li>קסם {state.character.attributes.magic}</li>

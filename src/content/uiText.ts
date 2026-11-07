@@ -29,6 +29,7 @@ export const roomTypeLabel: Record<RoomType, string> = {
   CHARACTER: 'מפגש',
   MAGIC: 'קסם',
   CHOICE: 'בחירה',
+  SHOP: 'חנות',
   EXIT: 'יציאה',
 }
 
@@ -41,7 +42,7 @@ export const ageOptions: { id: AgeGroup; label: string; detail: string }[] = [
 export const difficultyOptions: { id: Difficulty; label: string; detail: string }[] = [
   { id: 'easy', label: 'קל', detail: 'פחות נזק, בדיקות קלות יותר, ויותר ריפוי' },
   { id: 'normal', label: 'רגיל', detail: 'הרפתקה מאוזנת' },
-  { id: 'brave', label: 'אמיץ', detail: 'בדיקות קשות יותר, יותר נזק, ויותר אוצר' },
+  { id: 'brave', label: 'אמיץ', detail: 'בדיקות קשות יותר, יותר נזק, יותר אוצר, ועוד מפתח לדלת היציאה (עד 3)' },
 ]
 
 export const lengthOptions: { id: AdventureLength; label: string; detail: string }[] = [

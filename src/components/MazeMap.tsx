@@ -56,13 +56,18 @@ export function MazeMap({ view, journal }: { view: MapView; journal: { room: str
                     {room.monster === 'alive' ? '⚔️' : '✅'}
                   </text>
                 ) : null}
+                {room.shop ? (
+                  <text x={point.x + 20} y={point.y - 9} textAnchor="middle" fontSize="12">
+                    🛒
+                  </text>
+                ) : null}
               </g>
             )
           })}
         </svg>
       </div>
       <p className="map-key">
-        זהב: עברתם. מקווקו: עוד לא עברתם. סגול: דלת סודית. ⚔️ מפלצת שמחכה, ✅ מפלצת שניצחתם.
+        זהב: עברתם. מקווקו: עוד לא עברתם. סגול: דלת סודית. ⚔️ מפלצת שמחכה, ✅ מפלצת שניצחתם, 🛒 חנות.
       </p>
       {journal.length > 0 ? (
         <section className="journal">

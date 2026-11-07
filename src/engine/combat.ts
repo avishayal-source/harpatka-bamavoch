@@ -1,4 +1,5 @@
 import type { Catalog, CharacterClass, CombatAction, DiceLine, GameState, Monster } from '../models/types'
+import { gearBonus } from './gear'
 import { edgeKey } from './mazeNav'
 import { effectiveAttribute } from './requirementEvaluator'
 import { applyVitals, monsterTuning } from './vitals'
@@ -31,7 +32,11 @@ export function defenseScore(state: GameState): number {
   const agility = effectiveAttribute(state, 'agility')
   const base = Math.max(agility, Math.floor(strength / 2))
   const sturdy = state.character.classId === 'WARRIOR' || state.character.classId === 'DWARF' ? 1 : 0
-  return base + sturdy
+  return base + sturdy + gearBonus(state, 'defense')
+}
+
+export function weaponDamage(state: GameState, catalog: Catalog): number {
+  return (catalog.weapons[state.character.weaponId]?.damage ?? 0) + gearBonus(state, 'damage')
 }
 
 export function tunedMonster(state: GameState, monster: Monster): Monster {
@@ -95,8 +100,7 @@ export function combatAction(
   const counterPlayer = forced?.counterPlayer ?? forced?.player ?? draw()
   const counterFoe = forced?.counterFoe ?? forced?.foe ?? draw()
 
-  const weapon = catalog.weapons[state.character.weaponId]
-  const weaponDamage = weapon?.damage ?? 0
+  const damage = weaponDamage(state, catalog)
   const strength = effectiveAttribute(state, 'strength')
   const agility = effectiveAttribute(state, 'agility')
   const magic = effectiveAttribute(state, 'magic')
@@ -122,41 +126,45 @@ export function combatAction(
       })
     }
     const counter = monsterStrike(state, view, counterPlayer, counterFoe, 0, 0)
+    const caught =
+      counter.damage > 0
+        ? `${view.name} מהיר יותר וחוסם לכם את הדרך. עוד לפני שאתם מגיעים לדלת, הוא פוגע בכם.`
+        : `${view.name} מהיר יותר וחוסם לכם את הדרך. הוא מנסה לפגוע בכם ומחטיא, אבל אתם עדיין תקועים בחדר איתו.`
     return applyVitals({ ...state, diceState, combat: nextRound(state) }, {
       hpDelta: counter.damage === 0 ? 0 : -counter.damage,
-      message: `לא הספקתם לברוח.\n${counter.text}`,
+      message: `הבריחה לא הצליחה.\n${caught}`,
       success: false,
       dice: [...dice, counter.line],
     })
   }
 
-  let attackBonus = strength + weaponDamage
+  let attackBonus = strength + damage
   let attackLabel = 'כוח וכלי נשק'
   let magicCost = 0
   let incomingCut = 0
   let missPunish = 0
 
   if (action === 'spell') {
-    attackBonus = magic + 2
+    attackBonus = magic + 2 + gearBonus(state, 'spell')
     attackLabel = 'קסם'
     magicCost = 2
   } else if (action === 'skill') {
     magicCost = skill.cost
     if (state.character.classId === 'WARRIOR') {
-      attackBonus = strength + weaponDamage + 3
+      attackBonus = strength + damage + 3
       attackLabel = 'מכת כוח'
       missPunish = 2
     } else if (state.character.classId === 'WIZARD') {
       attackBonus = 0
       attackLabel = 'מגן'
     } else if (state.character.classId === 'THIEF') {
-      attackBonus = agility + weaponDamage
+      attackBonus = agility + damage
       attackLabel = 'זריזות וכלי נשק'
     } else if (state.character.classId === 'ELF') {
       attackBonus = magic + Math.floor(intelligence / 2)
       attackLabel = 'קסם וחכמה'
     } else {
-      attackBonus = strength + Math.max(1, weaponDamage - 1)
+      attackBonus = strength + Math.max(1, damage - 1)
       attackLabel = 'עמידת אבן'
       incomingCut = 2
     }
@@ -226,7 +234,7 @@ function monsterStrike(
   const damage = Math.max(0, raw - incomingCut)
   return {
     damage,
-    text: damage > 0 ? `${monster.name} פוגע בכם בעדינות כבדה.` : `${monster.name} מחטיא, ואתם זזים בזמן.`,
+    text: damage > 0 ? `${monster.name} פוגע בכם בכבדות.` : `${monster.name} מנסה לפגוע בכם, ואתם זזים בזמן.`,
     line: {
       title: 'המכה של המפלצת',
       you,

@@ -46,29 +46,32 @@ flowchart TD
     Life -->|first time| Potion[Emergency potion<br/>back to 35% life]
     Potion --> Choices
     Life -->|again| Lost[Adventure over]
-    Choices -->|leave from the exit| Won[Victory + score]
+    Choices -->|enough keys: through the great door| Won[Victory + score]
 ```
 
 ### The maze
 
-The maze is a fixed, hand-placed layout of 26 rooms, not a random route, so new rooms can go in exact spots. It is irregular, with loops, six dead ends, and three secret doors. Every corridor works both ways. The exit is only reachable through the stone guardian.
+The maze is a fixed, hand-placed layout of 28 rooms, not a random route, so new rooms can go in exact spots. It is irregular, with loops, six dead ends, three secret doors, and two shops. Every corridor works both ways. The exit is only reachable through the stone guardian and a great door that needs keys.
 
 ```mermaid
 flowchart TB
     watchtower["מגדל 🦇"] --- start["שער (start)"] --- torch[חצר] --- well["באר ⛔"]
-    kitchen["מטבח ⛔"] --- armory[נשק]
+    kitchen["מטבח 🔑"] --- armory[נשק]
+    kitchen --- minotaur["מינוטאור 🛒"]
+    minotaur --- trap
     watchtower --- armory
     start --- corridor["דלת 🔒"]
     torch --- fork[פרשה]
-    fork --- winding[מתפתל] --- stair["מדרגות ⛔"]
+    fork --- winding[מתפתל] --- stair["מדרגות ⛔ 🔑"]
     well -. secret .- winding
     armory --- trap[מלכודת]
     corridor --- hall[אולם]
     fork --- fountain[מזרקה]
     winding --- spiral[לולייני]
+    spiral --- troll["טרול 🛒 ⛔"]
     trap --- hall --- fountain
     trap --- goblin["גובלין 👺"]
-    echo["הד ⛔"] --- goblin
+    echo["הד ⛔ 🔑"] --- goblin
     hall --- chest[ארגז]
     fountain --- library[ספרייה]
     spiral --- cellar["מרתף 🦀"]
@@ -77,15 +80,38 @@ flowchart TB
     goblin --- tunnel["מנהרה ⛔"]
     tunnel -. secret .- pass[צר]
     chest --- pass
-    library -. secret .- vault["כספת 💎"]
-    cellar --- mushroom["פטריות ⛔"]
+    library -. secret .- vault["כספת 💎 🔑"]
+    cellar --- mushroom["פטריות ⛔ 🔑"]
     pass --- guardian["שומר 🗿"]
     vault --- bridge["גשר 🐺"]
     guardian --- bridge
-    guardian --- exit["יציאה 🏁"]
+    guardian -- "great door 🔐" --- exit["יציאה 🏁"]
 ```
 
-⛔ marks a dead end (the tunnel stops being one once you find its secret door). Dotted lines are secret doors, and 🔒 is the locked door.
+⛔ marks a dead end (the tunnel stops being one once you find its secret door). Dotted lines are secret doors, 🔒 is the locked door, 🔑 is a key, and 🛒 is a shop.
+
+### Keys and shops
+
+The great door before the exit needs keys. There are five keys in the maze, each in a room choice with no check, so a key can't be lost to a bad roll.
+
+| Age | Keys | On the brave level |
+| --- | --- | --- |
+| 6–7 | 1 | 2 |
+| 8–9 | 2 | 3 |
+| 10–12 | 3 | 3 (the most) |
+
+Two friendly monsters run shops: a young minotaur next to the kitchen, and a troll down the spiral stairs. Items cost treasure, which also lowers the final score. Potions can be bought again; gear is bought once and stays for the rest of the adventure.
+
+| Item | Shop | Price | Effect |
+| --- | --- | --- | --- |
+| שיקוי ריפוי | minotaur | 10 | +6 life |
+| מגן עץ | minotaur | 15 | +1 defense |
+| אבן השחזה | minotaur | 15 | +1 weapon damage |
+| מגילת ניצוצות | minotaur | 15 | +2 to the light ball spell (magic users only) |
+| שיקוי ריפוי גדול | troll | 15 | +10 life |
+| שיקוי קסם | troll | 10 | +4 magic (magic users only) |
+| מגן ברזל | troll | 25 | +2 defense |
+| חיזוק כוכבים | troll | 25 | +2 weapon damage |
 
 Movement rules:
 

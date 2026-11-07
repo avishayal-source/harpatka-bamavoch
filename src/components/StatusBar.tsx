@@ -1,20 +1,8 @@
-export function StatusBar({
-  hp,
-  maxHp,
-  magic,
-  maxMagic,
-  treasure,
-  weaponName,
-  secondChance,
-}: {
-  hp: number
-  maxHp: number
-  magic: number
-  maxMagic: number
-  treasure: number
-  weaponName: string
-  secondChance: boolean
-}) {
+import { keysNeeded } from '../engine/gear'
+import type { GameState } from '../models/types'
+
+export function StatusBar({ state, weaponName }: { state: GameState; weaponName: string }) {
+  const needed = keysNeeded(state)
   return (
     <div>
       <div className="hud">
@@ -22,7 +10,7 @@ export function StatusBar({
           <span>חיים</span>
           <b>
             <bdi>
-              {hp} / {maxHp}
+              {state.hp} / {state.maxHp}
             </bdi>
           </b>
         </div>
@@ -30,19 +18,28 @@ export function StatusBar({
           <span>קסם</span>
           <b>
             <bdi>
-              {magic} / {maxMagic}
+              {state.magicPoints} / {state.maxMagicPoints}
             </bdi>
           </b>
         </div>
         <div className="pill">
           <span>אוצר</span>
           <b>
-            <bdi>{treasure}</bdi>
+            <bdi>{state.treasure}</bdi>
+          </b>
+        </div>
+        <div className="pill">
+          <span>מפתחות</span>
+          <b>
+            <bdi>
+              {Math.min(state.keys.length, needed)} / {needed}
+            </bdi>
           </b>
         </div>
       </div>
       <p className="weapon-line">{weaponName}</p>
-      {secondChance ? (
+      {state.gear.length > 0 ? <p className="weapon-line">ציוד: {state.gear.map((item) => item.name).join(', ')}</p> : null}
+      {state.secondChanceAvailable ? (
         <p className="safety">יש לכם שיקוי חירום אחד, אם החיים ייגמרו.</p>
       ) : (
         <p className="safety">שיקוי החירום כבר נוצל.</p>

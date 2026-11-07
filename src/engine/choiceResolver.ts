@@ -1,4 +1,6 @@
 import type { Catalog, GameState, JournalEntry } from '../models/types'
+import { weaponDamage } from './combat'
+import { keysNeeded } from './gear'
 import { edgeKey } from './mazeNav'
 import { moveTo } from './movement'
 import { choiceAccess, choiceUsed, passesCheck } from './requirementEvaluator'
@@ -19,21 +21,39 @@ export function resolveChoice(state: GameState, choiceId: string, catalog: Catal
   if (!access.visible) throw new Error(`Hidden choice: ${choiceId}`)
   if (!access.enabled) throw new Error(`Disabled choice: ${choiceId}`)
 
-  const weapon = catalog.weapons[state.character.weaponId]
-  const success = choice.check ? passesCheck(choice.check, state, weapon?.damage ?? 0) : true
+  const success = choice.check ? passesCheck(choice.check, state, weaponDamage(state, catalog)) : true
   const outcome = !success && choice.failure ? choice.failure : choice.success
   const journal: JournalEntry[] = [
-    { roomId: room.id, text: choice.check ? `${choice.label} (${success ? 'הצליח' : 'לא הצליח'})` : choice.label },
+    {
+      roomId: room.id,
+      text: choice.cost
+        ? `קניתם: ${choice.label} (${choice.cost} מטבעות)`
+        : choice.check
+          ? `${choice.label} (${success ? 'הצליח' : 'לא הצליח'})`
+          : choice.label,
+    },
   ]
   const door = outcome.revealDoor
   if (door) {
     journal.push({ roomId: room.id, text: `מצאתם דלת סודית אל ${catalog.rooms[door]?.title ?? door}` })
   }
+  const key = outcome.key && !state.keys.includes(outcome.key) ? outcome.key : undefined
+  let message = textFor(state.ageGroup, outcome.message)
+  if (key) {
+    const name = catalog.keys[key] ?? key
+    const have = state.keys.length + 1
+    const needed = keysNeeded(state)
+    journal.push({ roomId: room.id, text: `מצאתם את ${name}` })
+    message +=
+      have >= needed
+        ? `\n\n🔑 מצאתם את ${name}! יש לכם ${have} מפתחות, וזה מספיק כדי לפתוח את הדלת הגדולה שליד היציאה.`
+        : `\n\n🔑 מצאתם את ${name}! יש לכם ${have} מתוך ${needed} מפתחות לדלת הגדולה.`
+  }
   return applyVitals(state, {
     hpDelta: outcome.hpChange,
     magicDelta: outcome.magicChange,
     treasureDelta: outcome.treasureChange,
-    message: textFor(state.ageGroup, outcome.message),
+    message,
     success,
     victory: outcome.victory,
     nextRoomId: outcome.nextRoomId ?? null,
@@ -42,6 +62,9 @@ export function resolveChoice(state: GameState, choiceId: string, catalog: Catal
     resolveChoice: true,
     revealDoor: door ? edgeKey(room.id, door) : undefined,
     journal,
+    spend: choice.cost,
+    key,
+    gear: outcome.gear,
   })
 }
 

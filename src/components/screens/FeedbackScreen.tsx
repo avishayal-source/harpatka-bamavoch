@@ -24,15 +24,7 @@ export function FeedbackScreen({
   return (
     <main className="play-layout">
       <section className="play-main">
-        <StatusBar
-          hp={state.hp}
-          maxHp={state.maxHp}
-          magic={state.magicPoints}
-          maxMagic={state.maxMagicPoints}
-          treasure={state.treasure}
-          weaponName={`${state.character.name} · ${weapon.name}`}
-          secondChance={state.secondChanceAvailable}
-        />
+        <StatusBar state={state} weaponName={`${state.character.name} · ${weapon.name}`} />
         <article className={`story-card result tone-${feedback.tone}`}>
           <h1>{feedbackHeading[feedback.tone]}</h1>
           <p className="story">{feedback.message}</p>

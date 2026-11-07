@@ -7,7 +7,9 @@ import {
   acknowledgeFeedback,
   combatAction,
   createNewGame,
+  defenseScore,
   getMapView,
+  keysNeeded,
   getRoomView,
   listChoiceViews,
   resolveChoice,
@@ -378,7 +380,7 @@ describe('the fortress maze', () => {
     expect(state.combat).toBeNull()
   })
 
-  it('can be won by walking to the exit and beating the guardian', () => {
+  it('can be won by collecting keys, beating the guardian, and opening the great door', () => {
     let state = walkToGuardian(newGame('WIZARD'))
     for (let guard = 0; state.combat && guard < 8; guard += 1) {
       state = combatAction(state, 'strike', catalog, { player: 6, foe: 1, counterPlayer: 6, counterFoe: 1 })
@@ -386,6 +388,14 @@ describe('the fortress maze', () => {
       state = acknowledgeFeedback(state)
     }
     expect(state.defeatedMonsters).toContain('stone-guardian')
+    const locked = listChoiceViews(state, catalog).find((choice) => choice.id === 'move:exit')
+    expect(locked?.enabled).toBe(false)
+    expect(locked?.reason).toContain('2 מפתחות')
+    expect(getRoomView(state, catalog).story).toContain('0 מתוך 2')
+    expect(() => moveTo(state, 'exit', catalog)).toThrow(/blocked/)
+
+    state = { ...state, keys: ['copper', 'star'] }
+    expect(listChoiceViews(state, catalog).find((choice) => choice.id === 'move:exit')?.enabled).toBe(true)
     state = moveTo(state, 'exit', catalog)
     state = resolveChoice(state, 'exit-leave', catalog)
     expect(state.phase).toBe('victory')
@@ -431,7 +441,7 @@ describe('the fortress maze', () => {
   })
 
   it('has dead ends with only the way back', () => {
-    for (const roomId of ['kitchen', 'well', 'collapsed-stair', 'echo-room', 'mushroom-cave', 'dwarf-tunnel']) {
+    for (const roomId of ['well', 'collapsed-stair', 'echo-room', 'mushroom-cave', 'dwarf-tunnel', 'troll-shop']) {
       const exits = listChoiceViews(atRoom('THIEF', roomId), catalog).filter((choice) => choice.id.startsWith('move:'))
       expect(exits, roomId).toHaveLength(1)
     }
@@ -454,5 +464,79 @@ describe('the fortress maze', () => {
 
     const hall = acknowledgeFeedback(resolveChoice(atRoom('ELF', 'hall'), 'hall-search', catalog))
     expect(getRoomView(hall, catalog).memory[0]).toContain('מחפשים בין העמודים')
+  })
+
+  it('does not say you dodged when the escape failed', () => {
+    const state = moveTo(newGame('THIEF'), 'watchtower', catalog)
+    const missed = combatAction(state, 'flee', catalog, { player: 1, foe: 6, counterPlayer: 6, counterFoe: 1 })
+    expect(missed.pendingFeedback?.message).toContain('הבריחה לא הצליחה')
+    expect(missed.pendingFeedback?.message).not.toContain('זזים בזמן')
+    expect(missed.combat).not.toBeNull()
+  })
+})
+
+describe('keys and shops', () => {
+  it('needs one key per age step, one more on brave, and never more than three', () => {
+    const cases = [
+      ['6-7', 'easy', 1],
+      ['6-7', 'brave', 2],
+      ['8-9', 'normal', 2],
+      ['8-9', 'brave', 3],
+      ['10-12', 'normal', 3],
+      ['10-12', 'brave', 3],
+    ] as const
+    for (const [ageGroup, difficulty, needed] of cases) {
+      expect(keysNeeded({ ageGroup, difficulty }), `${ageGroup} ${difficulty}`).toBe(needed)
+    }
+  })
+
+  it('places more keys than anyone needs, each in a choice with no check to fail', () => {
+    const found = Object.values(rooms).flatMap((room) =>
+      room.choices.filter((choice) => choice.success.key).map((choice) => ({ room: room.id, choice })),
+    )
+    expect(new Set(found.map((item) => item.choice.success.key)).size).toBeGreaterThanOrEqual(4)
+    for (const { choice } of found) expect(choice.check).toBeUndefined()
+  })
+
+  it('picks up a key once and counts it toward the door', () => {
+    let state = atRoom('DWARF', 'kitchen')
+    state = resolveChoice(state, 'kitchen-oven', catalog)
+    expect(state.keys).toEqual(['copper'])
+    expect(state.pendingFeedback?.message).toContain('1 מתוך 2')
+    state = acknowledgeFeedback(state)
+    expect(listChoiceViews(state, catalog).some((choice) => choice.id === 'kitchen-oven')).toBe(false)
+  })
+
+  it('sells items for treasure and keeps the gear', () => {
+    let state = atRoom('WARRIOR', 'minotaur-shop', { treasure: 12 })
+    const views = listChoiceViews(state, catalog)
+    expect(views.find((choice) => choice.id === 'shop1-shield')?.enabled).toBe(false)
+    expect(views.some((choice) => choice.id === 'shop1-scroll')).toBe(false)
+
+    const before = defenseScore(state)
+    state = acknowledgeFeedback(resolveChoice({ ...state, treasure: 20 }, 'shop1-shield', catalog))
+    expect(state.treasure).toBe(5)
+    expect(state.gear.map((item) => item.name)).toContain('מגן עץ')
+    expect(defenseScore(state)).toBe(before + 1)
+    expect(listChoiceViews(state, catalog).some((choice) => choice.id === 'shop1-shield')).toBe(false)
+  })
+
+  it('lets you buy potions again, but not when your life is full', () => {
+    let state = atRoom('ELF', 'troll-shop', { treasure: 40, hp: 5 })
+    state = acknowledgeFeedback(resolveChoice(state, 'shop2-potion', catalog))
+    expect(state.treasure).toBe(25)
+    expect(state.hp).toBe(15)
+    const again = listChoiceViews(state, catalog).find((choice) => choice.id === 'shop2-potion')
+    expect(again?.enabled).toBe(true)
+    const full = listChoiceViews({ ...state, hp: state.maxHp }, catalog).find((choice) => choice.id === 'shop2-potion')
+    expect(full?.enabled).toBe(false)
+  })
+
+  it('sells a spell only to magic users, and it makes the light ball stronger', () => {
+    let state = atRoom('WIZARD', 'minotaur-shop', { treasure: 15 })
+    state = acknowledgeFeedback(resolveChoice(state, 'shop1-scroll', catalog))
+    state = moveTo({ ...state, currentRoomId: 'start' }, 'watchtower', catalog)
+    const cast = combatAction(state, 'spell', catalog, { player: 1, foe: 1, counterPlayer: 6, counterFoe: 1 })
+    expect(cast.pendingFeedback?.dice?.[0]?.you.bonus).toBe(state.character.attributes.magic + 4)
   })
 })

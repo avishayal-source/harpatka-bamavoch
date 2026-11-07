@@ -7,18 +7,19 @@ import type { MazeLink } from '../../models/types'
  *  y0:             מגדל ─────── שער ─────── חצר ········ באר
  *                   │            │           │            ┊
  *  y1:  מטבח ───── נשק          דלת         פרשה ─────── מתפתל ────── מדרגות
- *                   │            │           │            │
- *  y2:             מלכודת ───── אולם ────── מזרקה        לולייני
+ *       │           │            │           │            │
+ *  y2:  חנות ───── מלכודת ───── אולם ────── מזרקה        לולייני ──── טרול
  *                   │            │           │            │
  *  y3:  הד ─────── גובלין ───── ארגז        ספרייה ───── מרתף
  *                   │            │           ┊            │
  *  y4:             מנהרה ······ צר          כספת         פטריות
  *                                │           │
  *  y5:                          שומר ─────── גשר
- *                                │
+ *                                🔒
  *  y6:                          יציאה
  *
- *  Dotted lines are secret doors. Dead ends: מטבח, באר, מדרגות, הד, מנהרה, פטריות.
+ *  Dotted lines are secret doors. Dead ends: באר, מדרגות, הד, מנהרה, פטריות, טרול.
+ *  Shops: חנות (the minotaur) and טרול. The door from שומר to יציאה needs keys.
  */
 export const mazeLayout: Record<string, { x: number; y: number; mapLabel: string; monsterId?: string }> = {
   watchtower: { x: 1, y: 0, mapLabel: 'מגדל', monsterId: 'stone-bat' },
@@ -31,10 +32,12 @@ export const mazeLayout: Record<string, { x: number; y: number; mapLabel: string
   fork: { x: 3, y: 1, mapLabel: 'פרשה' },
   'winding-hall': { x: 4, y: 1, mapLabel: 'מתפתל' },
   'collapsed-stair': { x: 5, y: 1, mapLabel: 'מדרגות' },
+  'minotaur-shop': { x: 0, y: 2, mapLabel: 'חנות' },
   'floor-trap': { x: 1, y: 2, mapLabel: 'מלכודת' },
   hall: { x: 2, y: 2, mapLabel: 'אולם' },
   'glow-fountain': { x: 3, y: 2, mapLabel: 'מזרקה' },
   'spiral-stair': { x: 4, y: 2, mapLabel: 'לולייני' },
+  'troll-shop': { x: 5, y: 2, mapLabel: 'טרול' },
   'echo-room': { x: 0, y: 3, mapLabel: 'הד' },
   goblin: { x: 1, y: 3, mapLabel: 'גובלין', monsterId: 'dust-goblin' },
   'coin-chest': { x: 2, y: 3, mapLabel: 'ארגז' },
@@ -59,6 +62,9 @@ export const mazeLinks: MazeLink[] = [
   { a: 'watchtower', b: 'armory' },
   { a: 'armory', b: 'kitchen' },
   { a: 'armory', b: 'floor-trap' },
+  { a: 'kitchen', b: 'minotaur-shop' },
+  { a: 'minotaur-shop', b: 'floor-trap' },
+  { a: 'spiral-stair', b: 'troll-shop' },
   { a: 'corridor', b: 'hall' },
   { a: 'fork', b: 'winding-hall' },
   { a: 'fork', b: 'glow-fountain' },

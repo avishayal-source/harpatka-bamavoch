@@ -27,6 +27,7 @@ export type RoomType =
   | 'CHARACTER'
   | 'MAGIC'
   | 'CHOICE'
+  | 'SHOP'
   | 'EXIT'
 
 export type PoolId =
@@ -102,6 +103,17 @@ export interface Outcome {
   victory?: boolean
   /** Opens the hidden door between this room and the given room. */
   revealDoor?: string
+  /** Id of a key for the final door. */
+  key?: string
+  /** Shop item that stays with you for the rest of the adventure. */
+  gear?: Gear
+}
+
+export interface Gear {
+  name: string
+  damage?: number
+  defense?: number
+  spell?: number
 }
 
 export interface Choice {
@@ -109,6 +121,10 @@ export interface Choice {
   label: string
   /** Choices in the same group are alternatives: using one uses them all. */
   group?: string
+  /** Shop price in treasure. */
+  cost?: number
+  /** Can be bought again, like a potion. */
+  repeatable?: boolean
   requiresClass?: CharacterClass[]
   requiresMagic?: number
   requiresWeapon?: string
@@ -245,6 +261,9 @@ export interface GameState {
   /** Edge keys of secret doors you found. */
   foundDoors: string[]
   journal: JournalEntry[]
+  /** Keys for the final door. */
+  keys: string[]
+  gear: Gear[]
   diceState: number
   combat: CombatState | null
   decisions: string[]
@@ -265,6 +284,7 @@ export interface Catalog {
   pools: Record<PoolId, string[]>
   links: MazeLink[]
   monsters: Record<string, Monster>
+  keys: Record<string, string>
 }
 
 export interface MapRoom {
@@ -274,6 +294,7 @@ export interface MapRoom {
   label: string
   kind: 'here' | 'visited' | 'seen'
   monster?: 'alive' | 'beaten'
+  shop?: boolean
 }
 
 export interface MapCorridor {

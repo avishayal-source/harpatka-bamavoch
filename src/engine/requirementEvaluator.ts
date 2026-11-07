@@ -59,11 +59,24 @@ export function choiceAccess(choice: Choice, state: GameState): ChoiceAccess {
       reason: `אין מספיק נקודות קסם (צריך ${choice.requiresMagic})`,
     }
   }
+  if (choice.cost !== undefined && state.treasure < choice.cost) {
+    return { visible: true, enabled: false, reason: `אין מספיק אוצר (צריך ${choice.cost}, יש לכם ${state.treasure})` }
+  }
+  if (choice.repeatable) {
+    const { hpChange = 0, magicChange = 0 } = choice.success
+    const healsOnly = hpChange > 0 && magicChange <= 0
+    const chargesOnly = magicChange > 0 && hpChange <= 0
+    if (healsOnly && state.hp >= state.maxHp) return { visible: true, enabled: false, reason: 'החיים שלכם כבר מלאים' }
+    if (chargesOnly && state.magicPoints >= state.maxMagicPoints) {
+      return { visible: true, enabled: false, reason: 'הקסם שלכם כבר מלא' }
+    }
+  }
   return { visible: true, enabled: true }
 }
 
 /** Used already, or an alternative in its group was used, or all it does is open a door you found. */
 export function choiceUsed(choice: Choice, room: Room, state: GameState): boolean {
+  if (choice.repeatable) return false
   if (state.resolvedChoices.includes(choice.id)) return true
   if (
     choice.group &&

@@ -1,7 +1,8 @@
+import { keysNeeded } from '../../engine/gear'
 import { textFor } from '../../engine/text'
 import { catalog } from '../../game/catalog'
 import type { GameState } from '../../models/types'
-import { introExpect, introGoal, introLegend, introReason } from '../../worlds/lostFortress/intro'
+import { introExpect, introGoal, introLegend, introReason, keysGoal } from '../../worlds/lostFortress/intro'
 
 export function IntroScreen({ state, onEnter }: { state: GameState; onEnter: () => void }) {
   const hero = catalog.classes[state.character.classId]
@@ -13,7 +14,11 @@ export function IntroScreen({ state, onEnter }: { state: GameState; onEnter: () 
         <p className="story">{textFor(state.ageGroup, introLegend)}</p>
         <h2>למה יצאתם לדרך, {hero.name}</h2>
         <p className="story">{textFor(state.ageGroup, introReason[state.character.classId])}</p>
-        <p className="hint">{textFor(state.ageGroup, introGoal)}</p>
+        <p className="hint">
+          {textFor(state.ageGroup, introGoal)}
+          <br />
+          {keysGoal(keysNeeded(state))}
+        </p>
         <h2>מה מחכה במבוך</h2>
         <ul className="expect">
           {introExpect.map((item) => (
