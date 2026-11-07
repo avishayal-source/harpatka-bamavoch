@@ -1,6 +1,7 @@
 import type { Catalog, CharacterClass, CombatAction, DiceLine, GameState, Monster } from '../models/types'
 import { gearBonus } from './gear'
 import { edgeKey } from './mazeNav'
+import { rollDie } from './random'
 import { effectiveAttribute } from './requirementEvaluator'
 import { applyVitals, monsterTuning } from './vitals'
 
@@ -91,7 +92,7 @@ export function combatAction(
   let diceState = state.diceState || 1
   const draw = () => {
     if (forced) return 0
-    const rolled = rollD6(diceState)
+    const rolled = rollDie(diceState)
     diceState = rolled.diceState
     return rolled.roll
   }
@@ -257,12 +258,6 @@ function side(die: number, bonus: number, label: string) {
 function nextRound(state: GameState): NonNullable<GameState['combat']> {
   if (!state.combat) throw new Error('No fight')
   return { ...state.combat, round: state.combat.round + 1 }
-}
-
-function rollD6(diceState: number): { roll: number; diceState: number } {
-  const next = (Math.imul(diceState || 1, 1664525) + 1013904223) >>> 0
-  const roll = (next % 6) + 1
-  return { roll, diceState: next || 1 }
 }
 
 function arrive(state: GameState, roomId: string, diceState: number): GameState {

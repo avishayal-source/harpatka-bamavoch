@@ -1,6 +1,7 @@
 import type { Catalog, GameState, JournalEntry } from '../models/types'
 import { weaponDamage } from './combat'
-import { keysNeeded } from './gear'
+import { keysNeeded, shopPrice } from './gear'
+import { HAGGLE, HIT_SELLER, haggle, hitSeller } from './shop'
 import { edgeKey } from './mazeNav'
 import { moveTo } from './movement'
 import { choiceAccess, choiceUsed, passesCheck } from './requirementEvaluator'
@@ -11,6 +12,8 @@ export function resolveChoice(state: GameState, choiceId: string, catalog: Catal
   if (state.phase !== 'playing') throw new Error('Choices can only be resolved while playing')
   if (state.combat) throw new Error('Finish the fight first')
   if (choiceId.startsWith('move:')) return moveTo(state, choiceId.slice(5), catalog)
+  if (choiceId === HAGGLE) return haggle(state, catalog)
+  if (choiceId === HIT_SELLER) return hitSeller(state, catalog)
   const room = catalog.rooms[state.currentRoomId]
   if (!room) throw new Error(`Unknown room: ${state.currentRoomId}`)
   const choice = room.choices.find((item) => item.id === choiceId)
@@ -21,13 +24,14 @@ export function resolveChoice(state: GameState, choiceId: string, catalog: Catal
   if (!access.visible) throw new Error(`Hidden choice: ${choiceId}`)
   if (!access.enabled) throw new Error(`Disabled choice: ${choiceId}`)
 
+  const price = choice.cost !== undefined ? shopPrice(state, room.id, choice.cost) : undefined
   const success = choice.check ? passesCheck(choice.check, state, weaponDamage(state, catalog)) : true
   const outcome = !success && choice.failure ? choice.failure : choice.success
   const journal: JournalEntry[] = [
     {
       roomId: room.id,
-      text: choice.cost
-        ? `קניתם: ${choice.label} (${choice.cost} מטבעות)`
+      text: price !== undefined
+        ? `קניתם: ${choice.label} (${price} מטבעות)`
         : choice.check
           ? `${choice.label} (${success ? 'הצליח' : 'לא הצליח'})`
           : choice.label,
@@ -62,7 +66,7 @@ export function resolveChoice(state: GameState, choiceId: string, catalog: Catal
     resolveChoice: true,
     revealDoor: door ? edgeKey(room.id, door) : undefined,
     journal,
-    spend: choice.cost,
+    spend: price,
     key,
     gear: outcome.gear,
   })

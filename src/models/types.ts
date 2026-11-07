@@ -150,6 +150,8 @@ export interface Room {
   monsterId?: string
   /** Only the way back is open until one of the room's choices is used. */
   barrier?: boolean
+  /** Shop rooms: who sells, and how hard they bargain. */
+  seller?: { name: string; stubbornness: number }
   hint?: {
     minIntelligence: number
     text: AgeText
@@ -172,6 +174,15 @@ export interface MazeLink {
   b: string
   /** A secret door: not shown or usable until a room choice reveals it. */
   hidden?: boolean
+}
+
+export interface ShopState {
+  /** Percent off. Negative means prices went up. */
+  discount: number
+  failedHaggles: number
+  /** The seller won't bargain anymore. */
+  haggleClosed: boolean
+  hitTried: boolean
 }
 
 export interface JournalEntry {
@@ -264,6 +275,7 @@ export interface GameState {
   /** Keys for the final door. */
   keys: string[]
   gear: Gear[]
+  shops: Record<string, ShopState>
   diceState: number
   combat: CombatState | null
   decisions: string[]

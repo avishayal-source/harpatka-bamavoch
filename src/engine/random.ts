@@ -10,6 +10,12 @@ export function createRng(seed: number): Rng {
   }
 }
 
+/** Deterministic die roll from the saved dice state, so a reload can't reroll. */
+export function rollDie(diceState: number, sides = 6): { roll: number; diceState: number } {
+  const next = (Math.imul(diceState || 1, 1664525) + 1013904223) >>> 0
+  return { roll: (next % sides) + 1, diceState: next || 1 }
+}
+
 export function randomSeed(): number {
   return Math.floor(Math.random() * 1_000_000_000)
 }

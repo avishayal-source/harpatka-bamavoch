@@ -1,6 +1,7 @@
 import type {
   Catalog,
   CharacterClass,
+  Choice,
   ChoiceView,
   GameState,
   NewGameInput,
@@ -9,7 +10,8 @@ import type {
 } from '../models/types'
 import { ATTRIBUTE_KEYS } from '../models/types'
 import { choiceAccess, choiceUsed, effectiveAttribute, intelligenceHintThreshold } from './requirementEvaluator'
-import { keysMissing, keysNeeded } from './gear'
+import { keysMissing, keysNeeded, shopPrice } from './gear'
+import { shopActions } from './shop'
 import { directionWord, exitBlocked, isSecretLink, neighborIds } from './mazeNav'
 import { randomSeed, type Rng } from './random'
 import { textFor } from './text'
@@ -84,6 +86,7 @@ export function createNewGame(input: NewGameInput, catalog: Catalog): GameState 
     journal: [],
     keys: [],
     gear: [],
+    shops: {},
     diceState: seed || 1,
     combat: null,
     decisions: [],
@@ -104,10 +107,16 @@ export function listChoiceViews(state: GameState, catalog: Catalog): ChoiceView[
     if (choiceUsed(choice, room, state)) return []
     const access = choiceAccess(choice, state)
     if (!access.visible) return []
-    const label = choice.cost ? `${choice.label} · ${choice.cost} מטבעות` : choice.label
-    return [{ id: choice.id, label, enabled: access.enabled, reason: access.reason }]
+    return [{ id: choice.id, label: priceLabel(state, room.id, choice), enabled: access.enabled, reason: access.reason }]
   })
-  return [...story, ...exitChoices(state, catalog)]
+  return [...story, ...shopActions(state, catalog), ...exitChoices(state, catalog)]
+}
+
+function priceLabel(state: GameState, roomId: string, choice: Choice): string {
+  if (choice.cost === undefined) return choice.label
+  const price = shopPrice(state, roomId, choice.cost)
+  const was = price === choice.cost ? '' : ` (במקום ${choice.cost})`
+  return `${choice.label} · ${price} מטבעות${was}`
 }
 
 function exitChoices(state: GameState, catalog: Catalog): ChoiceView[] {

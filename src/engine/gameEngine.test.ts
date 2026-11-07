@@ -18,6 +18,7 @@ import {
   scoreGame,
 } from '../engine/gameEngine'
 import { moveTo } from '../engine/movement'
+import { haggle, hitSeller } from '../engine/shop'
 import { createRng } from '../engine/random'
 import type { Attributes, Catalog, CharacterClass, GameState, Room } from '../models/types'
 import { parseSave, serializeSave } from '../storage/saveGame'
@@ -161,7 +162,7 @@ describe('choices', () => {
       for (const room of Object.values(rooms)) {
         if (room.x === undefined) continue
         const views = listChoiceViews(atRoom(classId, room.id), catalog)
-        const story = views.filter((choice) => !choice.id.startsWith('move:'))
+        const story = views.filter((choice) => !choice.id.startsWith('move:') && !choice.id.startsWith('shop:'))
         const exits = views.filter((choice) => choice.id.startsWith('move:'))
         expect(story.length).toBeLessThanOrEqual(4)
         expect(exits.length).toBeGreaterThanOrEqual(1)
@@ -530,6 +531,49 @@ describe('keys and shops', () => {
     expect(again?.enabled).toBe(true)
     const full = listChoiceViews({ ...state, hp: state.maxHp }, catalog).find((choice) => choice.id === 'shop2-potion')
     expect(full?.enabled).toBe(false)
+  })
+
+  it('bargains with charisma dice, never below 70% of the price, and stops after two failures', () => {
+    let state = atRoom('THIEF', 'minotaur-shop', { treasure: 30 })
+    for (let round = 0; round < 3; round += 1) {
+      state = acknowledgeFeedback(haggle(state, catalog, { player: 6, foe: 1 }))
+    }
+    expect(state.shops['minotaur-shop'].discount).toBe(30)
+    expect(() => haggle(state, catalog, { player: 6, foe: 1 })).toThrow(/No more/)
+    const haggleView = listChoiceViews(state, catalog).find((choice) => choice.id === 'shop:haggle')
+    expect(haggleView?.enabled).toBe(false)
+    const shield = listChoiceViews(state, catalog).find((choice) => choice.id === 'shop1-shield')
+    expect(shield?.label).toContain('11 מטבעות')
+    state = acknowledgeFeedback(resolveChoice(state, 'shop1-shield', catalog))
+    expect(state.treasure).toBe(19)
+
+    let stubborn = atRoom('THIEF', 'troll-shop')
+    stubborn = acknowledgeFeedback(haggle(stubborn, catalog, { player: 1, foe: 6 }))
+    expect(listChoiceViews(stubborn, catalog).some((choice) => choice.id === 'shop:haggle')).toBe(true)
+    stubborn = acknowledgeFeedback(haggle(stubborn, catalog, { player: 1, foe: 6 }))
+    expect(listChoiceViews(stubborn, catalog).some((choice) => choice.id === 'shop:haggle')).toBe(false)
+    expect(stubborn.shops['troll-shop'].discount).toBe(0)
+  })
+
+  it('hitting the seller works only on a 1-in-10 roll, and otherwise hurts and raises prices', () => {
+    let wins = 0
+    for (let player = 1; player <= 10; player += 1) {
+      for (let foe = 1; foe <= 10; foe += 1) {
+        const hit = hitSeller(atRoom('WARRIOR', 'troll-shop'), catalog, { player, foe })
+        if (hit.pendingFeedback?.success) wins += 1
+      }
+    }
+    expect(wins).toBe(10)
+
+    const failed = hitSeller(atRoom('WARRIOR', 'troll-shop', { treasure: 50 }), catalog, { player: 9, foe: 4 })
+    expect(failed.hp).toBeLessThan(failed.maxHp)
+    const after = acknowledgeFeedback(failed)
+    expect(listChoiceViews(after, catalog).find((choice) => choice.id === 'shop2-shield')?.label).toContain('38 מטבעות')
+    expect(listChoiceViews(after, catalog).some((choice) => choice.id.startsWith('shop:'))).toBe(false)
+
+    const lucky = acknowledgeFeedback(hitSeller(atRoom('WARRIOR', 'troll-shop'), catalog, { player: 10, foe: 4 }))
+    expect(lucky.treasure).toBe(20)
+    expect(lucky.shops['troll-shop'].discount).toBe(30)
   })
 
   it('sells a spell only to magic users, and it makes the light ball stronger', () => {

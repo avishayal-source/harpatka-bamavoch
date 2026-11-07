@@ -1,4 +1,5 @@
 import type { AttributeKey, Check, Choice, Difficulty, GameState, Room } from '../models/types'
+import { shopPrice } from './gear'
 import { edgeKey } from './mazeNav'
 
 const LOW_HP_RATIO = 0.25
@@ -59,8 +60,11 @@ export function choiceAccess(choice: Choice, state: GameState): ChoiceAccess {
       reason: `אין מספיק נקודות קסם (צריך ${choice.requiresMagic})`,
     }
   }
-  if (choice.cost !== undefined && state.treasure < choice.cost) {
-    return { visible: true, enabled: false, reason: `אין מספיק אוצר (צריך ${choice.cost}, יש לכם ${state.treasure})` }
+  if (choice.cost !== undefined) {
+    const price = shopPrice(state, state.currentRoomId, choice.cost)
+    if (state.treasure < price) {
+      return { visible: true, enabled: false, reason: `אין מספיק אוצר (צריך ${price}, יש לכם ${state.treasure})` }
+    }
   }
   if (choice.repeatable) {
     const { hpChange = 0, magicChange = 0 } = choice.success

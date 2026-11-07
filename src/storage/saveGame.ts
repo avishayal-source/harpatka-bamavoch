@@ -16,7 +16,8 @@ export function parseSave(raw: string, catalog: Catalog): GameState | null {
   try {
     const file = JSON.parse(raw) as Partial<SaveFile>
     if (file.version !== 4 || !file.state) return null
-    return isResumable(file.state, catalog) ? file.state : null
+    const state: GameState = { ...file.state, shops: file.state.shops ?? {} }
+    return isResumable(state, catalog) ? state : null
   } catch {
     return null
   }
@@ -53,6 +54,7 @@ function isResumable(state: GameState, catalog: Catalog): boolean {
   if (!Array.isArray(state.defeatedMonsters) || !Array.isArray(state.resolvedChoices)) return false
   if (!Array.isArray(state.foundDoors) || !Array.isArray(state.journal)) return false
   if (!Array.isArray(state.keys) || !Array.isArray(state.gear)) return false
+  if (!state.shops || typeof state.shops !== 'object') return false
   if (!state.monsterHp || typeof state.monsterHp !== 'object') return false
   return true
 }

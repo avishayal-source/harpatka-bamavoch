@@ -115,6 +115,11 @@ Two friendly monsters run shops: a young minotaur next to the kitchen, and a tro
 | מגן ברזל | troll | 25 | +2 defense |
 | חיזוק כוכבים | troll | 25 | +2 weapon damage |
 
+In every shop you can also:
+
+- **Bargain (מתמקחים):** a dice round like a fight: d6 + charisma against d6 + the seller's stubbornness (minotaur 5, troll 6). A win takes 10% off every item, up to 30% off, so a price never drops below 70%. A tie changes nothing. Two losses and the seller stops bargaining.
+- **Hit the seller (מכים את המוכר):** once per shop, with ten-sided dice. The seller always gets your bonus plus 5, so you win only when your die beats theirs by 6 or more: exactly 1 roll in 10. A win gives 20 coins and the full 30% discount. Otherwise you lose 3 life, the seller stops bargaining, and prices in that shop go up by half.
+
 Movement rules:
 
 - Entering a room for the first time counts toward the exploration score.
