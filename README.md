@@ -1,8 +1,10 @@
-# הרפתקה במבוך
+# אבן האש
 
-A browser adventure game in Hebrew for kids aged about 6–12. Pick a hero, roll its abilities, and find the way out of **מבוך המצודה האבודה** (the Lost Fortress maze): walk between rooms, solve challenges, fight monsters with dice, and collect treasure.
+A browser adventure game in Hebrew for kids aged about 6–12. Pick a hero, roll its abilities, and find the way out of **מבוך המצודה האבודה** (the Lost Fortress maze), where the lost fire stone, **אבן האש**, is hidden: walk between rooms, solve challenges, fight monsters with dice, and collect treasure.
 
-Everything runs in the browser. There is no server, login, or database; one saved adventure lives in `localStorage`.
+Everything runs in the browser. There is no server, login, or database; one saved adventure lives in `localStorage`. The game collects no personal data, which the page footer says.
+
+© 2026 Avishay Alfandary. All rights reserved. This is proprietary software; see [`LICENSE`](LICENSE).
 
 ## Run it
 

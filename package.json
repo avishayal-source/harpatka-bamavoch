@@ -2,7 +2,9 @@
   "name": "harpatka-bamavoch",
   "private": true,
   "version": "0.1.0",
-  "description": "הרפתקה במבוך — משחק הרפתקה בדפדפן לילדים",
+  "description": "אבן האש — משחק הרפתקה בדפדפן לילדים",
+  "license": "UNLICENSED",
+  "author": "Avishay Alfandary",
   "type": "module",
   "scripts": {
     "dev": "vite",

@@ -267,6 +267,19 @@ h1, h2, p { margin: 0; }
 
 .options { display: grid; gap: 8px; }
 
+.site-footer {
+  max-width: 720px;
+  margin: 8px auto 20px;
+  padding: 0 16px;
+  text-align: center;
+  font-size: 0.8rem;
+  opacity: 0.65;
+}
+
+.site-footer p {
+  margin: 2px 0;
+}
+
 .hud {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
