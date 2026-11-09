@@ -4,7 +4,8 @@ export const gameTitle = 'אבן האש'
 
 export const copyrightLine = '© 2026 אבישי אלפנדרי. כל הזכויות שמורות.'
 
-export const privacyLine = 'המשחק לא אוסף מידע אישי. ההתקדמות נשמרת רק בדפדפן שלכם, במכשיר הזה.'
+export const privacyLine =
+  'המשחק לא אוסף מידע אישי. האתר סופר רק כמה פעמים נכנסו אליו, וההתקדמות נשמרת רק בדפדפן שלכם, במכשיר הזה.'
 
 export const attributeMeta: { key: AttributeKey; label: string; icon: string }[] = [
   { key: 'strength', label: 'כוח', icon: '💪' },
