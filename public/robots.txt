@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+
+Sitemap: https://harpatka-bamavoch.avishayal.workers.dev/sitemap.xml
