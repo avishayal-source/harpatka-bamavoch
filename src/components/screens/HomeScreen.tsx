@@ -1,3 +1,4 @@
+import adventurersArt from '../../assets/home-adventurers.jpg'
 import { gameTitle } from '../../content/uiText'
 import { catalog } from '../../game/catalog'
 
@@ -14,9 +15,7 @@ export function HomeScreen({
 }) {
   return (
     <main className="layout home">
-      <div className="crest" aria-hidden="true">
-        🔥
-      </div>
+      <img className="home-art" src={adventurersArt} alt="" width={1024} height={576} />
       <h1>{gameTitle}</h1>
       <p className="world-name">{catalog.world.title}</p>
       <p className="lede">{catalog.world.description} בחרו דמות, היכנסו פנימה, חפשו את אבן האש האבודה, ומצאו את הדרך החוצה עם כמה שיותר אוצר.</p>
